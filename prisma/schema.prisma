@@ -1,0 +1,1663 @@
+// Church Management System - Prisma schema
+// Provider: MySQL 8
+//
+// Conventions:
+// - Multi-branch from day one: tenant-scoped tables carry a `branchId`.
+// - cuid() ids for portability across MySQL/backups.
+// - snake_case table names via @@map for clean SQL on shared hosting.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Organization (multi-branch)
+// ---------------------------------------------------------------------------
+
+model Church {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String?
+  phone     String?
+  address   String?  @db.Text
+  logoUrl   String?
+  currency  String   @default("NGN")
+  locale    String   @default("en-NG")
+  timezone  String   @default("Africa/Lagos")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches         Branch[]
+  settings         Setting[]
+  siteSlides       SiteSlide[]
+  sitePages        SitePage[]
+  siteSections     SiteSection[]
+  contactMessages  ContactMessage[]
+
+  @@map("churches")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  churchId  String
+  name      String
+  code      String
+  email     String?
+  phone     String?
+  address   String?  @db.Text
+  city      String?
+  state     String?
+  country   String?  @default("Nigeria")
+  isMain           Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  branchPastorId     String?
+  assistantPastorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church             Church              @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  branchPastor       Member?             @relation("BranchPastor", fields: [branchPastorId], references: [id], onDelete: SetNull)
+  assistantPastor    Member?             @relation("BranchAssistantPastor", fields: [assistantPastorId], references: [id], onDelete: SetNull)
+  users              User[]
+  departments        Department[]
+  households         Household[]
+  members            Member[]
+  groups             Group[]
+  attendanceSessions AttendanceSession[]
+  funds              Fund[]
+  givingTypes        GivingType[]
+  expenseCategories  ExpenseCategory[]
+  contributions      Contribution[]
+  expenses           Expense[]
+  pledges            Pledge[]
+  employees          Employee[]
+  payRuns            PayRun[]
+  payrollPeriodAdjustments PayrollPeriodAdjustment[]
+  sermons            Sermon[]
+  sermonSeries       SermonSeries[]
+  events             Event[]
+  outreaches         Outreach[]
+  outreachTypes      OutreachType[]
+  messages           Message[]
+  followUps          FollowUp[]
+  followUpCampaigns  FollowUpCampaign[]
+  smsWallet          SmsWallet?
+  smsPhoneGroups     SmsPhoneGroup[]
+  smsSenderIds       SmsSenderId[]
+  bulkSmsMessages    BulkSmsMessage[]
+  bulkSmsSchedules   BulkSmsSchedule[]
+
+  @@unique([churchId, code])
+  @@index([churchId])
+  @@map("branches")
+}
+
+// ---------------------------------------------------------------------------
+// Authentication & Access Control (RBAC)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  isSuperAdmin  Boolean   @default(false)
+  lastLoginAt   DateTime?
+  branchId      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  roles         UserRole[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  followUpAssignments FollowUpCampaignAssignee[]
+  followUpInteractions FollowUpInteraction[]
+  smsPhoneGroups      SmsPhoneGroup[]
+  smsSenderIds        SmsSenderId[]
+  bulkSmsMessages     BulkSmsMessage[]
+  bulkSmsSchedules    BulkSmsSchedule[]
+  notifications       UserNotification[]
+  devicePushTokens    DevicePushToken[]
+  employee            Employee?
+
+  @@index([branchId])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) // system roles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  // dotted key e.g. "finance.contribution.create"
+  key         String   @unique
+  module      String   // e.g. "finance"
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Cross-cutting: settings & audit
+// ---------------------------------------------------------------------------
+
+model Setting {
+  id        String   @id @default(cuid())
+  churchId  String
+  key       String
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, key])
+  @@map("settings")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String   // e.g. "user.login", "finance.contribution.create"
+  entityType String?
+  entityId   String?
+  metadata   String?  @db.Text // JSON string
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Organization: departments / ministries / units
+// ---------------------------------------------------------------------------
+
+model Department {
+  id          String   @id @default(cuid())
+  branchId    String
+  parentId    String?
+  name        String
+  description String?  @db.Text
+  leaderId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch   Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  parent   Department?        @relation("DepartmentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Department[]       @relation("DepartmentTree")
+  leader   Member?            @relation("DepartmentLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  members  MemberDepartment[]
+  announcements DepartmentAnnouncement[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@index([parentId])
+  @@map("departments")
+}
+
+enum DepartmentMemberRole {
+  HOD
+  ASSISTANT
+  SECRETARY
+  MEMBER
+}
+
+model DepartmentAnnouncement {
+  id             String   @id @default(cuid())
+  departmentId   String
+  title          String
+  message        String   @db.Text
+  channel        String   @default("BOTH")
+  recipientCount Int      @default(0)
+  sentById       String?
+  createdAt      DateTime @default(now())
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+  @@map("department_announcements")
+}
+
+// ---------------------------------------------------------------------------
+// Membership
+// ---------------------------------------------------------------------------
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum MemberStatus {
+  VISITOR
+  FIRST_TIMER
+  NEW_CONVERT
+  MEMBER
+  WORKER
+  LEADER
+  INACTIVE
+}
+
+enum PastoralRole {
+  NONE
+  PASTOR
+  ASSISTANT_PASTOR
+}
+
+enum HouseholdRole {
+  HEAD
+  SPOUSE
+  CHILD
+  RELATIVE
+  OTHER
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  branchId  String
+  name      String // family name, e.g. "The Okafor Family"
+  address   String?  @db.Text
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch  Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  members Member[]
+
+  @@index([branchId])
+  @@map("households")
+}
+
+model Member {
+  id               String         @id @default(cuid())
+  branchId         String
+  householdId      String?
+  membershipNumber String?
+  firstName        String
+  lastName         String
+  middleName       String?
+  gender           Gender?
+  dateOfBirth      DateTime?
+  maritalStatus    MaritalStatus?
+  householdRole    HouseholdRole?
+  email            String?
+  phone            String?
+  altPhone         String?
+  address          String?        @db.Text
+  city             String?
+  state            String?
+  country          String?        @default("Nigeria")
+  occupation       String?
+  employer         String?
+  photoUrl         String?
+  status           MemberStatus   @default(MEMBER)
+  pastoralRole     PastoralRole   @default(NONE)
+  joinedAt         DateTime?
+  baptismDate      DateTime?
+  isBaptizedWater  Boolean        @default(false)
+  isBaptizedSpirit Boolean        @default(false)
+  emergencyName    String?
+  emergencyPhone   String?
+  notes            String?        @db.Text
+  customFields     Json?
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  branch            Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  household          Household?         @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  departments       MemberDepartment[]
+  lifeEvents        MemberLifeEvent[]
+  ledDepartments    Department[]       @relation("DepartmentLeader")
+  groups            GroupMember[]
+  ledGroups         Group[]            @relation("GroupLeader")
+  groupMeetingAttendance GroupMeetingAttendance[]
+  attendanceRecords AttendanceRecord[]
+  contributions     Contribution[]
+  pledges           Pledge[]
+  testimonies       Testimony[]
+  eventRegistrations EventRegistration[]
+  followUps         FollowUp[]
+  followUpRecipients FollowUpRecipient[]
+  followUpInteractions FollowUpInteraction[]
+  messageRecipients MessageRecipient[]
+  pastorOfBranches       Branch[] @relation("BranchPastor")
+  assistantPastorOfBranches Branch[] @relation("BranchAssistantPastor")
+
+  @@unique([branchId, membershipNumber])
+  @@index([branchId])
+  @@index([householdId])
+  @@index([status])
+  @@index([lastName])
+  @@map("members")
+}
+
+model MemberDepartment {
+  memberId     String
+  departmentId String
+  role         DepartmentMemberRole @default(MEMBER)
+  joinedAt     DateTime             @default(now())
+
+  member     Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, departmentId])
+  @@index([departmentId])
+  @@map("member_departments")
+}
+
+enum LifeEventType {
+  BAPTISM
+  HOLY_SPIRIT_BAPTISM
+  MARRIAGE
+  CHILD_DEDICATION
+  NEW_BIRTH
+  MEMBERSHIP_CLASS
+  ORDINATION
+  DEATH
+  OTHER
+}
+
+model MemberLifeEvent {
+  id          String        @id @default(cuid())
+  memberId    String
+  type        LifeEventType
+  title       String
+  eventDate   DateTime
+  description String?       @db.Text
+  createdAt   DateTime      @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@map("member_life_events")
+}
+
+// ---------------------------------------------------------------------------
+// Groups (cells / small groups / fellowships)
+// ---------------------------------------------------------------------------
+
+model Group {
+  id          String   @id @default(cuid())
+  branchId    String
+  name        String
+  category    String?  // e.g. "Cell", "Fellowship", "Home Group"
+  description String?  @db.Text
+  leaderId    String?
+  meetingDay  String?  // e.g. "Wednesday"
+  meetingTime String?  // e.g. "18:00"
+  location    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch  Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  leader  Member?       @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  members GroupMember[]
+  activities GroupActivity[]
+  meetings GroupMeeting[]
+  announcements GroupAnnouncement[]
+
+  @@index([branchId])
+  @@map("groups")
+}
+
+enum GroupActivityType {
+  MEMBER_JOINED
+  MEMBER_LEFT
+  LEADER_CHANGED
+  GROUP_UPDATED
+  MEETING_HELD
+  ANNOUNCEMENT
+  NOTE
+}
+
+model GroupActivity {
+  id             String            @id @default(cuid())
+  groupId        String
+  type           GroupActivityType
+  title          String
+  description    String?           @db.Text
+  metadata       Json?
+  actorId        String?
+  actorName      String?
+  meetingId      String?
+  announcementId String?
+  createdAt      DateTime          @default(now())
+
+  group        Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  meeting      GroupMeeting?      @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  announcement GroupAnnouncement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, createdAt])
+  @@map("group_activities")
+}
+
+model GroupMeeting {
+  id          String   @id @default(cuid())
+  groupId     String
+  title       String
+  topic       String?
+  heldAt      DateTime
+  notes       String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  group      Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance GroupMeetingAttendance[]
+  activities GroupActivity[]
+
+  @@index([groupId, heldAt])
+  @@map("group_meetings")
+}
+
+model GroupMeetingAttendance {
+  meetingId String
+  memberId  String
+  present   Boolean @default(true)
+
+  meeting GroupMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member  Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([meetingId, memberId])
+  @@index([memberId])
+  @@map("group_meeting_attendance")
+}
+
+model GroupAnnouncement {
+  id          String   @id @default(cuid())
+  groupId     String
+  title       String
+  body        String   @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  group      Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  activities GroupActivity[]
+
+  @@index([groupId])
+  @@map("group_announcements")
+}
+
+model GroupMember {
+  groupId  String
+  memberId String
+  role     String?
+  joinedAt DateTime @default(now())
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, memberId])
+  @@index([memberId])
+  @@map("group_members")
+}
+
+// ---------------------------------------------------------------------------
+// Attendance
+// ---------------------------------------------------------------------------
+
+enum ServiceType {
+  SUNDAY_SERVICE
+  MIDWEEK_SERVICE
+  PRAYER_MEETING
+  BIBLE_STUDY
+  SPECIAL_PROGRAM
+  OTHER
+}
+
+model AttendanceSession {
+  id           String      @id @default(cuid())
+  branchId     String
+  title        String
+  type         ServiceType @default(SUNDAY_SERVICE)
+  date         DateTime
+  maleCount    Int         @default(0)
+  femaleCount  Int         @default(0)
+  childrenCount Int        @default(0)
+  newcomerCount Int        @default(0)
+  // Stored headcount; if per-member records exist, this can be derived.
+  totalCount   Int         @default(0)
+  notes        String?     @db.Text
+  createdById  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  branch  Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  records AttendanceRecord[]
+
+  @@index([branchId])
+  @@index([date])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  sessionId String
+  memberId  String
+  present   Boolean  @default(true)
+  checkInAt DateTime @default(now())
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  member  Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, memberId])
+  @@index([memberId])
+  @@map("attendance_records")
+}
+
+// ---------------------------------------------------------------------------
+// Finance
+// ---------------------------------------------------------------------------
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  POS
+  CHEQUE
+  ONLINE
+  OTHER
+}
+
+enum FinanceAccountType {
+  BANK
+  CASH
+  MOBILE_MONEY
+  OTHER
+}
+
+enum PledgeStatus {
+  ACTIVE
+  FULFILLED
+  CANCELLED
+}
+
+model GivingType {
+  id          String   @id @default(cuid())
+  branchId    String
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  contributions Contribution[]
+  salaryComponents SalaryComponent[]
+  payrollPeriodAdjustments PayrollPeriodAdjustment[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("giving_types")
+}
+
+model ExpenseCategory {
+  id          String   @id @default(cuid())
+  branchId    String
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("expense_categories")
+}
+
+model Fund {
+  id                 String             @id @default(cuid())
+  branchId           String
+  name               String
+  code               String?
+  description        String?            @db.Text
+  currency           String             @default("NGN")
+  accountType        FinanceAccountType @default(BANK)
+  bankName           String?
+  accountNumber      String?
+  openingBalance     Decimal            @default(0) @db.Decimal(14, 2)
+  openingBalanceDate DateTime?
+  isDefault          Boolean            @default(false)
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  contributions Contribution[]
+  expenses      Expense[]
+
+  @@index([branchId])
+  @@map("funds")
+}
+
+model Contribution {
+  id               String        @id @default(cuid())
+  branchId         String
+  fundId           String?
+  memberId         String?
+  givingTypeId     String?
+  payslipId        String?
+  pledgeId         String?
+  payrollDeduction String?
+  amount           Decimal       @db.Decimal(14, 2)
+  paymentMethod    PaymentMethod @default(CASH)
+  reference        String?
+  receiptNumber    String?       @unique
+  contributedAt    DateTime
+  note             String?       @db.Text
+  recordedById     String?
+  createdAt        DateTime      @default(now())
+
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  fund       Fund?       @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  member     Member?     @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  givingType GivingType? @relation(fields: [givingTypeId], references: [id], onDelete: SetNull)
+  payslip    Payslip?    @relation(fields: [payslipId], references: [id], onDelete: SetNull)
+  pledge     Pledge?     @relation(fields: [pledgeId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([memberId])
+  @@index([contributedAt])
+  @@index([givingTypeId])
+  @@index([payslipId])
+  @@index([pledgeId])
+  @@map("contributions")
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  branchId      String
+  fundId        String?
+  categoryId    String?
+  amount        Decimal       @db.Decimal(14, 2)
+  paidTo        String?
+  paymentMethod PaymentMethod @default(CASH)
+  reference     String?
+  description   String?       @db.Text
+  expenseDate   DateTime
+  recordedById  String?
+  createdAt     DateTime      @default(now())
+
+  branch   Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  fund     Fund?            @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  payslip  Payslip?
+
+  @@index([branchId])
+  @@index([expenseDate])
+  @@index([categoryId])
+  @@map("expenses")
+}
+
+model Pledge {
+  id              String       @id @default(cuid())
+  branchId        String
+  memberId        String?
+  campaign        String
+  amount          Decimal      @db.Decimal(14, 2)
+  fulfilledAmount Decimal      @default(0) @db.Decimal(14, 2)
+  dueDate         DateTime?
+  status          PledgeStatus @default(ACTIVE)
+  note            String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  member        Member?        @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  contributions Contribution[]
+
+  @@index([branchId])
+  @@index([memberId])
+  @@map("pledges")
+}
+
+// ---------------------------------------------------------------------------
+// HR & Payroll
+// ---------------------------------------------------------------------------
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  VOLUNTEER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum SalaryComponentType {
+  ALLOWANCE
+  DEDUCTION
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  COMPASSIONATE
+  STUDY
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PayRunStatus {
+  DRAFT
+  PROCESSED
+  PAID
+}
+
+model Employee {
+  id             String         @id @default(cuid())
+  branchId       String
+  userId         String?        @unique
+  memberId       String?
+  employeeNumber String         @unique
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  position       String?
+  department     String?
+  employmentType EmploymentType @default(FULL_TIME)
+  status         EmployeeStatus @default(ACTIVE)
+  hireDate       DateTime?
+  endDate        DateTime?
+  baseSalary     Decimal        @default(0) @db.Decimal(14, 2)
+  bankName       String?
+  bankAccountNo  String?
+  bankAccountName String?
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  branch     Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  user       User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  components SalaryComponent[]
+  leaves     LeaveRequest[]
+  payslips   Payslip[]
+  payrollPeriodAdjustments PayrollPeriodAdjustment[]
+
+  @@index([branchId])
+  @@map("employees")
+}
+
+model SalaryComponent {
+  id           String              @id @default(cuid())
+  employeeId   String
+  name         String
+  type         SalaryComponentType
+  amount       Decimal             @db.Decimal(14, 2)
+  isPercentage Boolean             @default(false) // % of base salary when true
+  givingTypeId String?
+  createdAt    DateTime            @default(now())
+
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  givingType GivingType? @relation(fields: [givingTypeId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@map("salary_components")
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  employeeId   String
+  type         LeaveType
+  startDate    DateTime
+  endDate      DateTime
+  days         Int
+  reason       String?     @db.Text
+  status       LeaveStatus @default(PENDING)
+  reviewedById String?
+  reviewNote   String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("leave_requests")
+}
+
+model PayRun {
+  id          String       @id @default(cuid())
+  branchId    String
+  title       String
+  period      String // e.g. "2026-06"
+  status      PayRunStatus @default(DRAFT)
+  runDate     DateTime     @default(now())
+  notes       String?      @db.Text
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  payslips Payslip[]
+  payrollPeriodAdjustments PayrollPeriodAdjustment[]
+
+  @@index([branchId])
+  @@map("pay_runs")
+}
+
+model PayrollPeriodAdjustment {
+  id           String              @id @default(cuid())
+  branchId     String
+  period       String
+  employeeId   String
+  name         String
+  type         SalaryComponentType
+  amount       Decimal             @db.Decimal(14, 2)
+  givingTypeId String?
+  payRunId     String?
+  createdAt    DateTime            @default(now())
+
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payRun     PayRun?     @relation(fields: [payRunId], references: [id], onDelete: SetNull)
+  givingType GivingType? @relation(fields: [givingTypeId], references: [id], onDelete: SetNull)
+
+  @@index([branchId, period])
+  @@index([employeeId])
+  @@index([payRunId])
+  @@map("payroll_period_adjustments")
+}
+
+model Payslip {
+  id               String   @id @default(cuid())
+  payRunId         String
+  employeeId       String
+  baseSalary       Decimal  @db.Decimal(14, 2)
+  totalAllowances  Decimal  @db.Decimal(14, 2)
+  totalDeductions  Decimal  @db.Decimal(14, 2)
+  grossPay         Decimal  @db.Decimal(14, 2)
+  netPay           Decimal  @db.Decimal(14, 2)
+  breakdown        Json? // snapshot of components at run time
+  expenseId        String?  @unique
+  createdAt        DateTime @default(now())
+
+  payRun         PayRun         @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  expense        Expense?       @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  contributions  Contribution[]
+
+  @@unique([payRunId, employeeId])
+  @@index([employeeId])
+  @@map("payslips")
+}
+
+// ---------------------------------------------------------------------------
+// Content: Sermons, Testimonies, Events, Outreaches
+// ---------------------------------------------------------------------------
+
+enum TestimonyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum OutreachStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model SermonSeries {
+  id          String   @id @default(cuid())
+  branchId    String
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch  Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  sermons Sermon[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("sermon_series")
+}
+
+model Sermon {
+  id          String    @id @default(cuid())
+  branchId    String
+  seriesId    String?
+  title       String
+  speaker     String?
+  scripture   String?
+  summary     String?   @db.Text
+  notes       String?   @db.LongText
+  audioUrl    String?
+  videoUrl    String?
+  preachedAt  DateTime?
+  tags        String?
+  isPublished Boolean   @default(false)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  sermonSeries SermonSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([seriesId])
+  @@index([preachedAt])
+  @@map("sermons")
+}
+
+model TestimonyCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  testimonies Testimony[]
+
+  @@map("testimony_categories")
+}
+
+model Testimony {
+  id           String          @id @default(cuid())
+  memberId     String?
+  authorName   String?
+  title        String
+  body         String          @db.Text
+  categoryId   String?
+  status       TestimonyStatus @default(PENDING)
+  isFeatured   Boolean         @default(false)
+  reviewedById String?
+  occurredAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  member            Member?            @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  testimonyCategory TestimonyCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([categoryId])
+  @@map("testimonies")
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  branchId    String
+  title       String
+  description String?     @db.Text
+  location    String?
+  startAt     DateTime
+  endAt       DateTime?
+  capacity    Int?
+  status      EventStatus @default(DRAFT)
+  isAllDay    Boolean     @default(false)
+  createdById String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  branch        Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  registrations EventRegistration[]
+
+  @@index([branchId])
+  @@index([startAt])
+  @@map("events")
+}
+
+model EventRegistration {
+  id         String   @id @default(cuid())
+  eventId    String
+  memberId   String?
+  guestName  String?
+  guestPhone String?
+  attended   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@map("event_registrations")
+}
+
+model OutreachType {
+  id          String   @id @default(cuid())
+  branchId    String
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  outreaches Outreach[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("outreach_types")
+}
+
+model Outreach {
+  id            String         @id @default(cuid())
+  branchId      String
+  typeId        String?
+  title         String
+  state         String?
+  location      String?
+  description   String?        @db.Text
+  startAt       DateTime?
+  endAt         DateTime?
+  status        OutreachStatus @default(PLANNED)
+  coordinator   String?
+  budget        Decimal?       @db.Decimal(14, 2)
+  peopleReached Int?
+  souls         Int?
+  outcome       String?        @db.Text
+  createdById   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  branch   Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  type     OutreachType?   @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  images   OutreachImage[]
+
+  @@index([branchId])
+  @@index([typeId])
+  @@index([state])
+  @@index([status])
+  @@map("outreaches")
+}
+
+model OutreachImage {
+  id         String   @id @default(cuid())
+  outreachId String
+  url        String
+  caption    String?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  outreach Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+
+  @@index([outreachId])
+  @@map("outreach_images")
+}
+
+// ---------------------------------------------------------------------------
+// Communication & Follow-up
+// ---------------------------------------------------------------------------
+
+enum MessageChannel {
+  EMAIL
+  SMS
+}
+
+enum MessageStatus {
+  DRAFT
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum FollowUpType {
+  FIRST_TIMER
+  ABSENTEE
+  NEW_CONVERT
+  PRAYER_REQUEST
+  COUNSELING
+  OTHER
+}
+
+enum FollowUpStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
+
+enum FollowUpRecipientStatus {
+  PENDING
+  CONTACTED
+  COMPLETED
+  SKIPPED
+}
+
+model FollowUpCampaign {
+  id          String         @id @default(cuid())
+  branchId    String
+  title       String
+  objective   String?        @db.Text
+  type        FollowUpType   @default(FIRST_TIMER)
+  dueDate     DateTime?
+  notes       String?        @db.Text
+  status      FollowUpStatus @default(OPEN)
+  createdById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  branch     Branch                      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  recipients FollowUpRecipient[]
+  assignees  FollowUpCampaignAssignee[]
+  interactions FollowUpInteraction[]
+
+  @@index([branchId])
+  @@index([status])
+  @@map("follow_up_campaigns")
+}
+
+model FollowUpRecipient {
+  id           String                  @id @default(cuid())
+  campaignId   String
+  memberId     String?
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  status       FollowUpRecipientStatus @default(PENDING)
+  note         String?                 @db.Text
+  contactedAt  DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  campaign FollowUpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  member   Member?          @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  interactions FollowUpInteraction[]
+
+  @@index([campaignId])
+  @@index([memberId])
+  @@index([status])
+  @@map("follow_up_recipients")
+}
+
+model FollowUpInteraction {
+  id            String   @id @default(cuid())
+  memberId      String
+  campaignId    String?
+  recipientId   String?
+  note          String   @db.Text
+  channel       String   @default("NOTE")
+  performedById String?
+  createdAt     DateTime @default(now())
+
+  member    Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  campaign  FollowUpCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  recipient FollowUpRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+  performer User?              @relation(fields: [performedById], references: [id], onDelete: SetNull)
+
+  @@index([memberId])
+  @@index([campaignId])
+  @@index([recipientId])
+  @@map("follow_up_interactions")
+}
+
+model FollowUpCampaignAssignee {
+  id         String    @id @default(cuid())
+  campaignId String
+  userId     String
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  campaign FollowUpCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([campaignId])
+  @@index([userId])
+  @@map("follow_up_campaign_assignees")
+}
+
+model MessageTemplate {
+  id        String         @id @default(cuid())
+  name      String
+  channel   MessageChannel @default(EMAIL)
+  subject   String?
+  body      String         @db.Text
+  category  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("message_templates")
+}
+
+model Message {
+  id            String         @id @default(cuid())
+  branchId      String
+  channel       MessageChannel @default(EMAIL)
+  subject       String?
+  body          String         @db.Text
+  status        MessageStatus  @default(DRAFT)
+  recipientCount Int           @default(0)
+  sentCount     Int            @default(0)
+  failedCount   Int            @default(0)
+  sentAt        DateTime?
+  createdById   String?
+  createdAt     DateTime       @default(now())
+
+  branch     Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  recipients MessageRecipient[]
+
+  @@index([branchId])
+  @@map("messages")
+}
+
+model MessageRecipient {
+  id        String          @id @default(cuid())
+  messageId String
+  memberId  String?
+  name      String?
+  address   String // email or phone
+  status    RecipientStatus @default(PENDING)
+  error     String?
+  sentAt    DateTime?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  member  Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([messageId])
+  @@map("message_recipients")
+}
+
+model FollowUp {
+  id          String         @id @default(cuid())
+  branchId    String
+  memberId    String?
+  contactName String?
+  contactPhone String?
+  type        FollowUpType   @default(FIRST_TIMER)
+  status      FollowUpStatus @default(OPEN)
+  assignedToId String?
+  notes       String?        @db.Text
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  branch Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([status])
+  @@map("follow_ups")
+}
+
+// ---------------------------------------------------------------------------
+// Bulk SMS
+// ---------------------------------------------------------------------------
+
+enum SmsSenderIdStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BulkSmsStatus {
+  SENT
+  FAILED
+}
+
+enum BulkSmsRecurrence {
+  ONCE
+  WEEKLY
+}
+
+enum BulkSmsScheduleStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum SmsWalletTxType {
+  CREDIT
+  DEBIT
+}
+
+model SmsWallet {
+  id        String   @id @default(cuid())
+  branchId  String?  @unique
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch       Branch?                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  transactions SmsWalletTransaction[]
+
+  @@map("sms_wallets")
+}
+
+model SmsWalletTransaction {
+  id          String          @id @default(cuid())
+  walletId    String
+  type        SmsWalletTxType
+  amount      Decimal         @db.Decimal(12, 2)
+  description String          @db.Text
+  reference   String?
+  provider    String?
+  externalRef String?
+  createdAt   DateTime        @default(now())
+
+  wallet SmsWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@map("sms_wallet_transactions")
+}
+
+model SmsPhoneGroup {
+  id           String   @id @default(cuid())
+  branchId     String?
+  name         String
+  phoneNumbers String   @db.Text
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@map("sms_phone_groups")
+}
+
+model SmsSenderId {
+  id          String            @id @default(cuid())
+  branchId    String?
+  senderId    String
+  purpose     String            @db.Text
+  status      SmsSenderIdStatus @default(PENDING)
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@map("sms_sender_ids")
+}
+
+model BulkSmsMessage {
+  id             String        @id @default(cuid())
+  branchId       String?
+  scheduleId     String?
+  senderIdLabel  String
+  phoneNumbers   String        @db.Text
+  message        String        @db.Text
+  pages          Int
+  recipientCount Int
+  cost           Decimal       @db.Decimal(12, 2)
+  status         BulkSmsStatus
+  gateway        String?
+  responseData   Json?
+  sentById       String?
+  sentAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  branch   Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  sentBy   User?            @relation(fields: [sentById], references: [id], onDelete: SetNull)
+  schedule BulkSmsSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([status])
+  @@index([scheduleId])
+  @@map("bulk_sms_messages")
+}
+
+model BulkSmsSchedule {
+  id             String                @id @default(cuid())
+  branchId       String?
+  senderId       String
+  phoneGroupIds  Json?
+  phoneNumbers   String?               @db.Text
+  message        String                @db.Text
+  recurrence     BulkSmsRecurrence     @default(ONCE)
+  recurrenceDays Json?
+  scheduledAt    DateTime
+  nextRunAt      DateTime
+  lastRunAt      DateTime?
+  lastRunError   String?               @db.Text
+  status         BulkSmsScheduleStatus @default(ACTIVE)
+  createdById    String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  branch    Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdBy User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  messages  BulkSmsMessage[]
+
+  @@index([branchId])
+  @@index([status])
+  @@index([nextRunAt])
+  @@map("bulk_sms_schedules")
+}
+
+// ---------------------------------------------------------------------------
+// In-app notifications & push token registry
+// ---------------------------------------------------------------------------
+
+model UserNotification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String?   @db.Text
+  type      String    @default("GENERAL")
+  link      String?
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("user_notifications")
+}
+
+model DevicePushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_push_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Public website CMS
+// ---------------------------------------------------------------------------
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SiteSectionType {
+  WELCOME
+  VISION
+  MISSION
+  VALUES
+  PASTOR_WORD
+  CTA
+  CUSTOM
+}
+
+model SiteSlide {
+  id        String   @id @default(cuid())
+  churchId  String
+  title     String
+  subtitle  String?  @db.Text
+  imageUrl  String?
+  ctaLabel  String?
+  ctaUrl    String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, sortOrder])
+  @@map("site_slides")
+}
+
+model SitePage {
+  id              String        @id @default(cuid())
+  churchId        String
+  slug            String
+  title           String
+  subtitle        String?
+  body            String        @db.LongText
+  status          PublishStatus @default(DRAFT)
+  sortOrder       Int           @default(0)
+  metaDescription String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@unique([churchId, slug])
+  @@index([churchId, status])
+  @@map("site_pages")
+}
+
+model SiteSection {
+  id        String          @id @default(cuid())
+  churchId  String
+  pageSlug  String          @default("home")
+  type      SiteSectionType @default(CUSTOM)
+  title     String
+  subtitle  String?         @db.Text
+  body      String?         @db.LongText
+  imageUrl  String?
+  ctaLabel  String?
+  ctaUrl    String?
+  sortOrder Int             @default(0)
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, pageSlug, sortOrder])
+  @@map("site_sections")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  churchId  String
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, isRead])
+  @@index([churchId, createdAt])
+  @@map("contact_messages")
+}

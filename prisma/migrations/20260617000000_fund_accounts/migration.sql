@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `funds`
+    ADD COLUMN `currency` VARCHAR(191) NOT NULL DEFAULT 'NGN',
+    ADD COLUMN `accountType` ENUM('BANK', 'CASH', 'MOBILE_MONEY', 'OTHER') NOT NULL DEFAULT 'BANK',
+    ADD COLUMN `bankName` VARCHAR(191) NULL,
+    ADD COLUMN `accountNumber` VARCHAR(191) NULL,
+    ADD COLUMN `openingBalance` DECIMAL(14, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN `openingBalanceDate` DATETIME(3) NULL;
