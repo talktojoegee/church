@@ -20,7 +20,12 @@ if ! command -v pnpm &>/dev/null; then
   exit 1
 fi
 
-echo "==> pnpm $(pnpm --version)"
+echo "==> pnpm $(pnpm --version) in $(pwd)"
+if [[ ! -f pnpm-workspace.yaml ]]; then
+  echo "ERROR: pnpm-workspace.yaml not found — run deploy from repo root"
+  exit 1
+fi
+
 echo "==> Installing dependencies"
 pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
