@@ -56,7 +56,7 @@ interface Outreach {
   coordinator: string | null;
   peopleReached: number | null;
   souls: number | null;
-  images?: Array<{ id: string }>;
+  images?: Array<{ id: string; url: string; caption?: string | null }>;
 }
 
 const PAGE_TABS = [
@@ -442,6 +442,11 @@ export default function OutreachesPage() {
                           <p className="font-medium text-slate-900 dark:text-slate-100">{o.title}</p>
                           {o.location && (
                             <p className="line-clamp-1 text-xs text-slate-500">{o.location}</p>
+                          )}
+                          {o.images && o.images.length > 0 && (
+                            <p className="line-clamp-1 text-xs text-emerald-600">
+                              {o.images.length} photo{o.images.length === 1 ? '' : 's'}
+                            </p>
                           )}
                         </div>
                       </div>

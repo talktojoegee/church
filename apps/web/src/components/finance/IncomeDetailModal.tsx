@@ -17,6 +17,8 @@ export interface IncomeRecord {
   paymentMethod: string;
   reference?: string | null;
   note?: string | null;
+  donorName?: string | null;
+  donorEmail?: string | null;
   member?: { firstName: string; lastName: string } | null;
   givingType?: { name: string } | null;
   fund?: { name: string; currency?: string; bankName?: string | null; accountNumber?: string | null } | null;
@@ -45,7 +47,14 @@ export function IncomeDetailModal({
     ? 'Payroll repayment'
     : record.pledgeId
       ? `Pledge${record.pledge?.campaign ? `: ${record.pledge.campaign}` : ''}`
-      : 'Manual entry';
+      : record.givingType?.name === 'Online Giving' || record.paymentMethod === 'ONLINE'
+        ? 'Online giving'
+        : 'Manual entry';
+
+  const donorLabel =
+    record.member
+      ? `${record.member.firstName} ${record.member.lastName}`
+      : record.donorName ?? 'Anonymous';
 
   return (
     <Modal open={!!record} onClose={onClose} title="Income details" size="lg">
@@ -74,7 +83,8 @@ export function IncomeDetailModal({
         items={[
           { label: 'Receipt number', value: record.receiptNumber ?? '—' },
           { label: 'Income type', value: record.givingType?.name },
-          { label: 'Member', value: record.member ? `${record.member.firstName} ${record.member.lastName}` : 'Anonymous' },
+          { label: 'Donor', value: donorLabel },
+          { label: 'Email', value: record.donorEmail ?? undefined },
           { label: 'Payment method', value: humanize(record.paymentMethod) },
           { label: 'Account', value: record.fund?.name },
           {

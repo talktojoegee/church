@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PageHero } from '@/components/public/PageHero';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { submitContact } from '@/lib/site-api';
 import { toast } from '@/lib/toast-context';
@@ -96,17 +96,14 @@ export default function ContactPage() {
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
           />
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Message</label>
-            <textarea
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-              rows={5}
-              value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
-              required
-              minLength={10}
-            />
-          </div>
+          <Textarea
+            label="Message"
+            rows={5}
+            value={form.message}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
+            required
+            minLength={10}
+          />
           <Button type="submit" disabled={submitting} className="w-full">
             {submitting ? 'Sending…' : 'Send Message'}
           </Button>

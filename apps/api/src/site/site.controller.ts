@@ -3,12 +3,17 @@ import { SiteService } from './site.service';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import {
+  CreateSiteGalleryDto,
   CreateSitePageDto,
   CreateSiteSectionDto,
   CreateSiteSlideDto,
   PublicContactDto,
+  PublicEventRegisterDto,
   PublicTestimonyDto,
+  PublicVerifyGivingDto,
+  UpdateAboutSettingsDto,
   UpdateGivingSettingsDto,
+  UpdateSiteGalleryDto,
   UpdateSitePageDto,
   UpdateSiteSectionDto,
   UpdateSiteSlideDto,
@@ -31,6 +36,12 @@ export class SitePublicController {
   }
 
   @Public()
+  @Get('about')
+  about() {
+    return this.site.getPublicAbout();
+  }
+
+  @Public()
   @Get('testimonies')
   testimonies() {
     return this.site.listPublicTestimonies();
@@ -40,6 +51,60 @@ export class SitePublicController {
   @Get('giving')
   giving() {
     return this.site.getPublicGiving();
+  }
+
+  @Public()
+  @Post('giving/verify')
+  verifyGiving(@Body() dto: PublicVerifyGivingDto) {
+    return this.site.verifyPublicGiving(dto);
+  }
+
+  @Public()
+  @Get('events')
+  events() {
+    return this.site.listPublicEvents();
+  }
+
+  @Public()
+  @Get('events/:id')
+  event(@Param('id') id: string) {
+    return this.site.getPublicEvent(id);
+  }
+
+  @Public()
+  @Get('sermons')
+  sermons() {
+    return this.site.listPublicSermons();
+  }
+
+  @Public()
+  @Get('sermons/:id')
+  sermon(@Param('id') id: string) {
+    return this.site.getPublicSermon(id);
+  }
+
+  @Public()
+  @Post('events/:id/register')
+  registerEvent(@Param('id') id: string, @Body() dto: PublicEventRegisterDto) {
+    return this.site.registerPublicEvent(id, dto);
+  }
+
+  @Public()
+  @Get('outreaches')
+  outreaches() {
+    return this.site.listPublicOutreaches();
+  }
+
+  @Public()
+  @Get('outreaches/:id')
+  outreach(@Param('id') id: string) {
+    return this.site.getPublicOutreach(id);
+  }
+
+  @Public()
+  @Get('gallery')
+  gallery() {
+    return this.site.listPublicGallery();
   }
 
   @Public()
@@ -147,5 +212,36 @@ export class SiteAdminController {
   @Patch('giving') @Permissions('content.website.manage')
   updateGivingSettings(@Body() dto: UpdateGivingSettingsDto) {
     return this.site.updateGivingSettings(dto);
+  }
+
+  @Get('about') @Permissions('content.website.view')
+  getAboutSettings() {
+    return this.site.getAboutSettings();
+  }
+
+  @Patch('about') @Permissions('content.website.manage')
+  updateAboutSettings(@Body() dto: UpdateAboutSettingsDto) {
+    return this.site.updateAboutSettings(dto);
+  }
+
+  // Gallery
+  @Get('gallery') @Permissions('content.website.view')
+  listGallery() {
+    return this.site.listGallery();
+  }
+
+  @Post('gallery') @Permissions('content.website.create')
+  createGallery(@Body() dto: CreateSiteGalleryDto) {
+    return this.site.createGallery(dto);
+  }
+
+  @Patch('gallery/:id') @Permissions('content.website.update')
+  updateGallery(@Param('id') id: string, @Body() dto: UpdateSiteGalleryDto) {
+    return this.site.updateGallery(id, dto);
+  }
+
+  @Delete('gallery/:id') @Permissions('content.website.delete')
+  removeGallery(@Param('id') id: string) {
+    return this.site.removeGallery(id);
   }
 }

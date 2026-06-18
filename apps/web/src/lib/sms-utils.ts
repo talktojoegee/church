@@ -44,7 +44,10 @@ declare global {
         key: string;
         email: string;
         amount: number;
+        currency?: string;
         ref: string;
+        label?: string;
+        metadata?: Record<string, unknown>;
         onClose: () => void;
         callback: (response: { reference: string }) => void;
       }) => { openIframe: () => void };
@@ -52,14 +55,69 @@ declare global {
   }
 }
 
+/** Fallback email for Paystack when the donor leaves email blank. */
+export function emailForGiving(donorName: string, email?: string): string {
+  if (email && isPaystackValidEmail(email)) return email.trim();
+  const slug = donorName.replace(/[^a-z0-9]/gi, '').slice(0, 24) || 'donor';
+  return `giving+${slug}@example.com`;
+}
+
 export function loadPaystackScript(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
   if (window.PaystackPop) return Promise.resolve();
+
   return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src="https://js.paystack.co/v1/inline.js"]',
+    );
+
+    const waitForPop = (attempts = 0) => {
+      if (window.PaystackPop) {
+        resolve();
+        return;
+      }
+      if (attempts > 100) {
+        reject(new Error('Paystack failed to initialize'));
+        return;
+      }
+      setTimeout(() => waitForPop(attempts + 1), 50);
+    };
+
+    if (existing) {
+      waitForPop();
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://js.paystack.co/v1/inline.js';
-    script.onload = () => resolve();
+    script.async = true;
+    script.onload = () => waitForPop();
     script.onerror = () => reject(new Error('Failed to load Paystack'));
     document.body.appendChild(script);
   });
+}
+
+export function openPaystackCheckout(options: {
+  key: string;
+  email: string;
+  amount: number;
+  ref: string;
+  onClose: () => void;
+  callback: (response: { reference: string }) => void;
+}) {
+  if (!window.PaystackPop) {
+    throw new Error('Paystack is not loaded');
+  }
+  const handler = window.PaystackPop.setup({
+    key: options.key.trim(),
+    email: options.email,
+    amount: options.amount,
+    ref: options.ref,
+    onClose: options.onClose,
+    callback: options.callback,
+  });
+  if (!handler?.openIframe) {
+    throw new Error('Paystack checkout could not open');
+  }
+  handler.openIframe();
 }

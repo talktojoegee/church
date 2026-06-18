@@ -162,6 +162,44 @@ async function seedSiteContent(churchId: string, churchName: string) {
     data: [
       { churchId, key: 'giving_intro', value: 'Thank you for your generous heart. Your giving supports worship, missions, and community outreach.' },
       { churchId, key: 'giving_instructions', value: 'Use bank transfer details below or give securely online via Paystack when enabled.' },
+      { churchId, key: 'pastor_name', value: 'Pastor Joseph Gee' },
+      { churchId, key: 'pastor_title', value: 'Senior Pastor' },
+      {
+        churchId,
+        key: 'pastor_bio',
+        value:
+          'Pastor Joseph Gee leads Power And Glory Generation with a passion for Spirit-led worship, sound biblical teaching, and reaching every generation with the gospel.\n\nUnder his leadership, the church has grown into a vibrant family committed to true worship, true witness, and community transformation across Lagos and beyond.',
+      },
+      { churchId, key: 'about_founded', value: '2010' },
+      {
+        churchId,
+        key: 'about_story',
+        value: `<p>${churchName} began as a small prayer gathering with a vision to raise a worshipping, witnessing generation. Today we are a multi-generational Pentecostal family — children, youth, adults, and seniors — united by our love for Jesus and our commitment to the Great Commission.</p><p>We believe the local church is God's instrument for transforming lives, families, and communities. Every Sunday and throughout the week, we gather to worship, learn God's Word, pray, and serve together.</p>`,
+      },
+      {
+        churchId,
+        key: 'about_beliefs',
+        value: [
+          'The Bible is the inspired and authoritative Word of God',
+          'Jesus Christ is Lord and Saviour — born of the Virgin Mary, crucified, risen, and coming again',
+          'Salvation is by grace through faith in Jesus Christ',
+          'The baptism in the Holy Spirit empowers believers for life and ministry',
+          'Divine healing is available through faith in Christ',
+          'The Church is called to worship God, witness to the world, and serve our community',
+        ].join('\n'),
+      },
+      {
+        churchId,
+        key: 'about_values',
+        value: [
+          'Authentic Worship',
+          'Biblical Teaching',
+          'Spirit-Empowered Living',
+          'Generational Discipleship',
+          'Community Impact',
+          'Excellence in Ministry',
+        ].join('\n'),
+      },
       { churchId, key: 'site_content_seeded', value: 'true' },
     ],
     skipDuplicates: true,
@@ -469,6 +507,7 @@ async function seedDemoData(
     { name: 'Thanksgiving', description: 'Thanksgiving offerings' },
     { name: 'Missions', description: 'Missions & outreach giving' },
     { name: 'Welfare', description: 'Welfare & benevolence' },
+    { name: 'Online Giving', description: 'Paystack and other online donations' },
   ];
   const givingTypes = await Promise.all(
     givingTypeNames.map((gt) =>

@@ -51,6 +51,10 @@ export default function OutreachDetailPage() {
   const qc = useQueryClient();
   const { hasPermission } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [lightbox, setLightbox] = useState<{
+    url: string;
+    caption: string | null;
+  } | null>(null);
 
   const outreachQuery = useQuery({
     queryKey: ['outreach', id],
@@ -249,11 +253,17 @@ export default function OutreachDetailPage() {
                 key={img.id}
                 className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
               >
-                <img
-                  src={assetUrl(img.url)}
-                  alt={img.caption ?? 'Outreach photo'}
-                  className="aspect-square w-full object-cover transition group-hover:scale-105"
-                />
+                <button
+                  type="button"
+                  onClick={() => setLightbox({ url: img.url, caption: img.caption })}
+                  className="block w-full"
+                >
+                  <img
+                    src={assetUrl(img.url)}
+                    alt={img.caption ?? 'Outreach photo'}
+                    className="aspect-square w-full object-cover transition group-hover:scale-105"
+                  />
+                </button>
                 {hasPermission('content.outreach.update') && (
                   <button
                     type="button"
@@ -275,6 +285,32 @@ export default function OutreachDetailPage() {
           </div>
         )}
       </div>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          <div className="max-h-[90vh] max-w-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={assetUrl(lightbox.url)}
+              alt={lightbox.caption ?? 'Outreach photo'}
+              className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            />
+            {lightbox.caption && (
+              <p className="mt-3 text-center text-sm text-white/90">{lightbox.caption}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,18 +1,19 @@
 import { notFound } from 'next/navigation';
-import { fetchPublicPage } from '@/lib/site-api';
+import { fetchPublicAbout } from '@/lib/site-api';
 import { PageHero } from '@/components/public/PageHero';
-import { CmsHtml } from '@/components/public/CmsHtml';
+import { AboutPageContent } from '@/components/public/AboutPageContent';
 
 export default async function AboutPage() {
-  const page = await fetchPublicPage('about');
-  if (!page) notFound();
+  const data = await fetchPublicAbout();
+  if (!data) notFound();
+
+  const title = data.page?.title ?? 'About Us';
+  const subtitle = data.page?.subtitle ?? 'Our story, beliefs, and leadership';
 
   return (
     <>
-      <PageHero title={page.title} subtitle={page.subtitle} />
-      <section className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
-        <CmsHtml html={page.body} />
-      </section>
+      <PageHero title={title} subtitle={subtitle} />
+      <AboutPageContent data={data} />
     </>
   );
 }

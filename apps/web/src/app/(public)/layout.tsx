@@ -6,7 +6,7 @@ export default async function PublicLayout({ children }: { children: React.React
   const branding = await fetchPublicBranding();
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="public-site flex min-h-screen flex-col bg-white text-slate-900">
       <PublicHeader name={branding?.name} logoUrl={branding?.logoUrl} />
       <main className="flex-1">{children}</main>
       <PublicFooter

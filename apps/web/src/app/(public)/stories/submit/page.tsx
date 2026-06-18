@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { submitPublicTestimony } from '@/lib/site-api';
 import { toast } from '@/lib/toast-context';
@@ -58,18 +58,15 @@ export default function SubmitTestimonyPage() {
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               required
             />
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Your story</label>
-              <textarea
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                rows={8}
-                value={form.body}
-                onChange={(e) => setForm({ ...form, body: e.target.value })}
-                required
-                minLength={20}
-                placeholder="Tell us what God has done in your life…"
-              />
-            </div>
+            <Textarea
+              label="Your story"
+              rows={8}
+              value={form.body}
+              onChange={(e) => setForm({ ...form, body: e.target.value })}
+              required
+              minLength={20}
+              placeholder="Tell us what God has done in your life…"
+            />
             <p className="text-xs text-slate-500">
               Submissions are reviewed before appearing on the website.
             </p>

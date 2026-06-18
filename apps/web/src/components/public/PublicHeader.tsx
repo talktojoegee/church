@@ -9,7 +9,9 @@ import { ChurchLogo } from '@/components/layout/ChurchLogo';
 const NAV = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
+  { href: '/upcoming-events', label: 'Events' },
   { href: '/stories', label: 'Testimonies' },
+  { href: '/our-outreaches', label: 'Outreaches' },
   { href: '/give', label: 'Give' },
   { href: '/contact', label: 'Contact' },
 ];
@@ -32,7 +34,9 @@ export function PublicHeader({ name, logoUrl }: PublicHeaderProps) {
 
         <nav className="hidden items-center gap-1 md:flex">
           {NAV.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              pathname === item.href ||
+              (item.href !== '/' && pathname.startsWith(`${item.href}/`));
             return (
               <Link
                 key={item.href}

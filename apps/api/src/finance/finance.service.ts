@@ -440,7 +440,10 @@ export class FinanceService {
       doc.text(`Payment method: ${c.paymentMethod.replace(/_/g, ' ')}`);
       if (c.member) {
         doc.text(`Received from: ${c.member.firstName} ${c.member.lastName}`);
+      } else if (c.donorName) {
+        doc.text(`Received from: ${c.donorName}`);
       }
+      if (c.donorEmail) doc.text(`Email: ${c.donorEmail}`);
       if (c.fund) doc.text(`Fund: ${c.fund.name}`);
       if (c.reference) doc.text(`Reference: ${c.reference}`);
       doc.moveDown();
@@ -801,6 +804,8 @@ export class FinanceService {
               { receiptNumber: { contains: search } },
               { member: { firstName: { contains: search } } },
               { member: { lastName: { contains: search } } },
+              { donorName: { contains: search } },
+              { donorEmail: { contains: search } },
               { givingType: { name: { contains: search } } },
             ],
           }

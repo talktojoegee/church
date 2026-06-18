@@ -38,6 +38,7 @@ model Church {
   siteSlides       SiteSlide[]
   sitePages        SitePage[]
   siteSections     SiteSection[]
+  siteGallery      SiteGalleryImage[]
   contactMessages  ContactMessage[]
 
   @@map("churches")
@@ -719,6 +720,8 @@ model Contribution {
   amount           Decimal       @db.Decimal(14, 2)
   paymentMethod    PaymentMethod @default(CASH)
   reference        String?
+  donorName        String?
+  donorEmail       String?
   receiptNumber    String?       @unique
   contributedAt    DateTime
   note             String?       @db.Text
@@ -1660,4 +1663,21 @@ model ContactMessage {
   @@index([churchId, isRead])
   @@index([churchId, createdAt])
   @@map("contact_messages")
+}
+
+model SiteGalleryImage {
+  id        String   @id @default(cuid())
+  churchId  String
+  title     String
+  caption   String?  @db.Text
+  imageUrl  String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  church Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, sortOrder])
+  @@map("site_gallery_images")
 }

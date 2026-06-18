@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image, FileText, Heart, Mail, Plus, Pencil, Trash2, ExternalLink, Layout } from 'lucide-react';
+import { Image, FileText, Heart, Mail, Plus, Pencil, Trash2, ExternalLink, Layout, Images, User, Eye, Phone } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -21,6 +21,8 @@ import { toast } from '@/lib/toast-context';
 const TABS = [
   { id: 'slides', label: 'Hero Slides', icon: Image },
   { id: 'sections', label: 'Home Sections', icon: Layout },
+  { id: 'gallery', label: 'Gallery', icon: Images },
+  { id: 'about', label: 'About Page', icon: User },
   { id: 'pages', label: 'Pages', icon: FileText },
   { id: 'giving', label: 'Giving', icon: Heart },
   { id: 'contact', label: 'Contact Inbox', icon: Mail },
@@ -72,6 +74,15 @@ interface ContactMessage {
   createdAt: string;
 }
 
+interface GalleryItem {
+  id: string;
+  title: string;
+  caption: string | null;
+  imageUrl: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 const SECTION_TYPES = ['WELCOME', 'VISION', 'MISSION', 'VALUES', 'PASTOR_WORD', 'CTA', 'CUSTOM'];
 
 export default function WebsitePage() {
@@ -92,6 +103,11 @@ export default function WebsitePage() {
     queryFn: async () => (await api.get('/site/sections', { params: { pageSlug: 'home' } })).data as Section[],
   });
 
+  const galleryQuery = useQuery({
+    queryKey: ['site-gallery'],
+    queryFn: async () => (await api.get('/site/gallery')).data as GalleryItem[],
+  });
+
   const pagesQuery = useQuery({
     queryKey: ['site-pages'],
     queryFn: async () => (await api.get('/site/pages')).data as SitePage[],
@@ -100,6 +116,11 @@ export default function WebsitePage() {
   const givingQuery = useQuery({
     queryKey: ['site-giving'],
     queryFn: async () => (await api.get('/site/giving')).data,
+  });
+
+  const aboutQuery = useQuery({
+    queryKey: ['site-about'],
+    queryFn: async () => (await api.get('/site/about')).data,
   });
 
   const contactQuery = useQuery({
@@ -180,6 +201,39 @@ export default function WebsitePage() {
     },
   });
 
+  // Gallery modal
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [editingGallery, setEditingGallery] = useState<GalleryItem | null>(null);
+  const [galleryForm, setGalleryForm] = useState({
+    title: '',
+    caption: '',
+    imageUrl: '',
+    sortOrder: 0,
+    isActive: true,
+  });
+
+  const saveGallery = useMutation({
+    mutationFn: async () => {
+      const payload = { ...galleryForm, sortOrder: Number(galleryForm.sortOrder) };
+      if (editingGallery) return api.patch(`/site/gallery/${editingGallery.id}`, payload);
+      return api.post('/site/gallery', payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['site-gallery'] });
+      setGalleryOpen(false);
+      toast.success('Gallery image saved');
+    },
+    onError: () => toast.error('Failed to save gallery image'),
+  });
+
+  const deleteGallery = useMutation({
+    mutationFn: (id: string) => api.delete(`/site/gallery/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['site-gallery'] });
+      toast.success('Image deleted');
+    },
+  });
+
   // Page modal
   const [pageOpen, setPageOpen] = useState(false);
   const [editingPage, setEditingPage] = useState<SitePage | null>(null);
@@ -222,6 +276,8 @@ export default function WebsitePage() {
     givingAccountName: '',
     givingAccountNumber: '',
     givingPaystackEnabled: false,
+    paystackPublicKey: '',
+    paystackSecretKey: '',
   });
 
   const givingLoaded = givingQuery.data;
@@ -235,6 +291,8 @@ export default function WebsitePage() {
       givingAccountName: givingLoaded.givingAccountName ?? '',
       givingAccountNumber: givingLoaded.givingAccountNumber ?? '',
       givingPaystackEnabled: givingLoaded.givingPaystackEnabled ?? false,
+      paystackPublicKey: givingLoaded.paystackPublicKey ?? '',
+      paystackSecretKey: '',
     });
   }, [givingLoaded]);
 
@@ -247,10 +305,60 @@ export default function WebsitePage() {
     onError: () => toast.error('Failed to save giving settings'),
   });
 
+  const [aboutForm, setAboutForm] = useState({
+    pastorName: '',
+    pastorTitle: '',
+    pastorBio: '',
+    pastorPhotoUrl: '',
+    aboutFounded: '',
+    aboutStory: '',
+    aboutBeliefs: '',
+    aboutValues: '',
+  });
+
+  const aboutLoaded = aboutQuery.data;
+
+  useEffect(() => {
+    if (!aboutLoaded) return;
+    setAboutForm({
+      pastorName: aboutLoaded.pastorName ?? '',
+      pastorTitle: aboutLoaded.pastorTitle ?? '',
+      pastorBio: aboutLoaded.pastorBio ?? '',
+      pastorPhotoUrl: aboutLoaded.pastorPhotoUrl ?? '',
+      aboutFounded: aboutLoaded.aboutFounded ?? '',
+      aboutStory: aboutLoaded.aboutStory ?? '',
+      aboutBeliefs: aboutLoaded.aboutBeliefs ?? '',
+      aboutValues: aboutLoaded.aboutValues ?? '',
+    });
+  }, [aboutLoaded]);
+
+  const saveAbout = useMutation({
+    mutationFn: () => api.patch('/site/about', aboutForm),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['site-about'] });
+      toast.success('About page settings saved');
+    },
+    onError: () => toast.error('Failed to save about settings'),
+  });
+
   const markRead = useMutation({
     mutationFn: (id: string) => api.patch(`/site/contact-messages/${id}/read`, { isRead: true }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['site-contact'] }),
   });
+
+  const [contactOpen, setContactOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ContactMessage | null>(null);
+
+  const openContactMessage = (msg: ContactMessage) => {
+    setSelectedContact(msg);
+    setContactOpen(true);
+    if (!msg.isRead) markRead.mutate(msg.id);
+  };
+
+  const closeContactMessage = () => {
+    setContactOpen(false);
+    setSelectedContact(null);
+  };
 
   const openSlideModal = (slide?: Slide) => {
     setEditingSlide(slide ?? null);
@@ -290,6 +398,22 @@ export default function WebsitePage() {
     setSectionOpen(true);
   };
 
+  const openGalleryModal = (item?: GalleryItem) => {
+    setEditingGallery(item ?? null);
+    setGalleryForm(
+      item
+        ? {
+            title: item.title,
+            caption: item.caption ?? '',
+            imageUrl: item.imageUrl,
+            sortOrder: item.sortOrder,
+            isActive: item.isActive,
+          }
+        : { title: '', caption: '', imageUrl: '', sortOrder: 0, isActive: true },
+    );
+    setGalleryOpen(true);
+  };
+
   const openPageModal = (page?: SitePage) => {
     setEditingPage(page ?? null);
     setPageForm(
@@ -307,7 +431,7 @@ export default function WebsitePage() {
     setPageOpen(true);
   };
 
-  const publicPath = (slug: string) => (slug === 'about' || slug === 'give' ? `/${slug}` : `/${slug}`);
+  const publicPath = (slug: string) => `/${slug}`;
 
   return (
     <div>
@@ -441,6 +565,57 @@ export default function WebsitePage() {
         </Card>
       )}
 
+      {tab === 'gallery' && (
+        <Card>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">Photo Gallery</h2>
+            {canEdit && (
+              <Button size="sm" onClick={() => openGalleryModal()}>
+                <Plus size={16} /> Add photo
+              </Button>
+            )}
+          </div>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Title</Th>
+                <Th>Order</Th>
+                <Th>Status</Th>
+                {canEdit && <Th>Actions</Th>}
+              </tr>
+            </thead>
+            <tbody>
+              {(galleryQuery.data ?? []).map((item) => (
+                <tr key={item.id}>
+                  <Td className="font-medium">{item.title}</Td>
+                  <Td>{item.sortOrder}</Td>
+                  <Td>
+                    <Badge tone={item.isActive ? 'green' : 'gray'}>
+                      {item.isActive ? 'Active' : 'Hidden'}
+                    </Badge>
+                  </Td>
+                  {canEdit && (
+                    <Td>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => openGalleryModal(item)}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteGallery.mutate(item.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </Td>
+                  )}
+                </tr>
+              ))}
+              {!galleryQuery.data?.length && (
+                <EmptyRow colSpan={canEdit ? 4 : 3} message="No gallery images yet" />
+              )}
+            </tbody>
+          </Table>
+        </Card>
+      )}
+
       {tab === 'pages' && (
         <Card>
           <div className="mb-4 flex items-center justify-between">
@@ -508,6 +683,75 @@ export default function WebsitePage() {
         </Card>
       )}
 
+      {tab === 'about' && canManage && (
+        <Card className="max-w-2xl space-y-4">
+          <h2 className="font-semibold text-slate-900">About Page</h2>
+          <p className="text-sm text-slate-500">
+            Manage senior pastor profile and about page content. Leave pastor name empty to use the
+            branch pastor from your church setup.
+          </p>
+          <Input
+            label="Senior pastor name"
+            value={aboutForm.pastorName}
+            onChange={(e) => setAboutForm({ ...aboutForm, pastorName: e.target.value })}
+          />
+          <Input
+            label="Title"
+            value={aboutForm.pastorTitle}
+            onChange={(e) => setAboutForm({ ...aboutForm, pastorTitle: e.target.value })}
+            placeholder="Senior Pastor"
+          />
+          <FileUpload
+            label="Pastor photo"
+            value={aboutForm.pastorPhotoUrl}
+            onChange={(url) => setAboutForm({ ...aboutForm, pastorPhotoUrl: url })}
+          />
+          <Textarea
+            label="Pastor biography"
+            value={aboutForm.pastorBio}
+            onChange={(e) => setAboutForm({ ...aboutForm, pastorBio: e.target.value })}
+            rows={6}
+            placeholder="Write a short bio. Use blank lines between paragraphs."
+          />
+          <Input
+            label="Year founded"
+            value={aboutForm.aboutFounded}
+            onChange={(e) => setAboutForm({ ...aboutForm, aboutFounded: e.target.value })}
+            placeholder="e.g. 2010"
+          />
+          <Textarea
+            label="Our story (HTML supported)"
+            value={aboutForm.aboutStory}
+            onChange={(e) => setAboutForm({ ...aboutForm, aboutStory: e.target.value })}
+            rows={6}
+          />
+          <Textarea
+            label="What we believe (one per line)"
+            value={aboutForm.aboutBeliefs}
+            onChange={(e) => setAboutForm({ ...aboutForm, aboutBeliefs: e.target.value })}
+            rows={6}
+          />
+          <Textarea
+            label="Core values (one per line)"
+            value={aboutForm.aboutValues}
+            onChange={(e) => setAboutForm({ ...aboutForm, aboutValues: e.target.value })}
+            rows={4}
+            placeholder={'Authentic Worship\nBiblical Teaching\nCommunity Care'}
+          />
+          <Button onClick={() => saveAbout.mutate()} disabled={saveAbout.isPending}>
+            Save about page
+          </Button>
+        </Card>
+      )}
+
+      {tab === 'about' && !canManage && (
+        <Card>
+          <p className="text-sm text-slate-500">
+            You need website manage permission to edit about page settings.
+          </p>
+        </Card>
+      )}
+
       {tab === 'giving' && canManage && (
         <Card className="max-w-2xl space-y-4">
           <h2 className="font-semibold text-slate-900">Giving Settings</h2>
@@ -538,6 +782,44 @@ export default function WebsitePage() {
             value={givingForm.givingAccountNumber}
             onChange={(e) => setGivingForm({ ...givingForm, givingAccountNumber: e.target.value })}
           />
+
+          <div className="border-t border-slate-200 pt-4">
+            <h3 className="font-semibold text-slate-900">Paystack</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Add your Paystack keys to accept online giving on the public Give page.
+            </p>
+            {givingQuery.data?.paystackKeysSource === 'environment' && (
+              <p className="mt-2 text-xs text-amber-700">
+                Keys are currently loaded from server environment variables. Saving keys here will
+                store church-specific credentials in settings.
+              </p>
+            )}
+            <div className="mt-4 space-y-4">
+              <Input
+                label="Paystack public key"
+                value={givingForm.paystackPublicKey}
+                onChange={(e) => setGivingForm({ ...givingForm, paystackPublicKey: e.target.value })}
+                placeholder="pk_live_… or pk_test_…"
+              />
+              <Input
+                label="Paystack secret key"
+                type="password"
+                value={givingForm.paystackSecretKey}
+                onChange={(e) => setGivingForm({ ...givingForm, paystackSecretKey: e.target.value })}
+                placeholder={
+                  givingQuery.data?.paystackSecretKeyMasked
+                    ? `Saved: ${givingQuery.data.paystackSecretKeyMasked}`
+                    : 'sk_live_… or sk_test_…'
+                }
+              />
+              {givingQuery.data?.paystackSecretKeyMasked && (
+                <p className="text-xs text-slate-500">
+                  Leave secret key blank to keep the current saved key.
+                </p>
+              )}
+            </div>
+          </div>
+
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <Checkbox
               checked={givingForm.givingPaystackEnabled}
@@ -550,7 +832,7 @@ export default function WebsitePage() {
           </label>
           {!givingQuery.data?.paystackConfigured && (
             <p className="text-xs text-amber-700">
-              Paystack keys are not configured in server environment variables.
+              Add both Paystack public and secret keys above to enable online giving.
             </p>
           )}
           <Button onClick={() => saveGiving.mutate()} disabled={saveGiving.isPending}>
@@ -578,7 +860,11 @@ export default function WebsitePage() {
             </thead>
             <tbody>
               {(contactQuery.data ?? []).map((msg) => (
-                <tr key={msg.id} className={!msg.isRead ? 'bg-brand-50/50' : undefined}>
+                <tr
+                  key={msg.id}
+                  className={`cursor-pointer ${!msg.isRead ? 'bg-brand-50/50' : ''} hover:bg-slate-50`}
+                  onClick={() => openContactMessage(msg)}
+                >
                   <Td>
                     <div className="font-medium">{msg.name}</div>
                     <div className="text-xs text-slate-500">{msg.email}</div>
@@ -591,11 +877,16 @@ export default function WebsitePage() {
                     </Badge>
                   </Td>
                   <Td>
-                    {!msg.isRead && (
-                      <Button size="sm" variant="outline" onClick={() => markRead.mutate(msg.id)}>
-                        Mark read
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openContactMessage(msg);
+                      }}
+                    >
+                      <Eye size={14} className="mr-1" /> View
+                    </Button>
                   </Td>
                 </tr>
               ))}
@@ -610,6 +901,70 @@ export default function WebsitePage() {
       {tab === 'contact' && !canManage && (
         <Card><p className="text-sm text-slate-500">You need website manage permission to view contact messages.</p></Card>
       )}
+
+      <Modal
+        open={contactOpen}
+        onClose={closeContactMessage}
+        title={selectedContact?.subject || 'Contact message'}
+        size="lg"
+      >
+        {selectedContact && (
+          <div className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">From</p>
+                <p className="mt-1 font-medium text-slate-900">{selectedContact.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Received</p>
+                <p className="mt-1 text-sm text-slate-700">{formatDate(selectedContact.createdAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Email</p>
+                <a
+                  href={`mailto:${selectedContact.email}`}
+                  className="mt-1 block text-sm font-medium text-brand-700 hover:text-brand-800"
+                >
+                  {selectedContact.email}
+                </a>
+              </div>
+              {selectedContact.phone && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Phone</p>
+                  <a
+                    href={`tel:${selectedContact.phone}`}
+                    className="mt-1 flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800"
+                  >
+                    <Phone size={14} />
+                    {selectedContact.phone}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Message</p>
+              <div className="mt-2 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                  {selectedContact.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`mailto:${selectedContact.email}?subject=Re: ${encodeURIComponent(selectedContact.subject || 'Your message')}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                <Mail size={16} /> Reply by email
+              </a>
+              <Button type="button" variant="outline" onClick={closeContactMessage}>
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Slide modal */}
       <Modal open={slideOpen} onClose={() => setSlideOpen(false)} title={editingSlide ? 'Edit slide' : 'New slide'}>
@@ -665,6 +1020,31 @@ export default function WebsitePage() {
           </label>
           <Button onClick={() => saveSection.mutate()} disabled={saveSection.isPending} className="w-full">
             Save section
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Gallery modal */}
+      <Modal open={galleryOpen} onClose={() => setGalleryOpen(false)} title={editingGallery ? 'Edit photo' : 'Add photo'}>
+        <div className="space-y-4">
+          <Input label="Title" value={galleryForm.title} onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })} required />
+          <Textarea label="Caption" value={galleryForm.caption} onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })} rows={2} />
+          <FileUpload
+            label="Photo"
+            value={galleryForm.imageUrl}
+            onChange={(url) => setGalleryForm({ ...galleryForm, imageUrl: url })}
+            accept="image/*"
+          />
+          <Input label="Sort order" type="number" value={String(galleryForm.sortOrder)} onChange={(e) => setGalleryForm({ ...galleryForm, sortOrder: Number(e.target.value) })} />
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <Checkbox
+              checked={galleryForm.isActive}
+              onChange={(e) => setGalleryForm({ ...galleryForm, isActive: e.target.checked })}
+            />
+            Active
+          </label>
+          <Button onClick={() => saveGallery.mutate()} disabled={saveGallery.isPending || !galleryForm.imageUrl} className="w-full">
+            Save photo
           </Button>
         </div>
       </Modal>

@@ -245,6 +245,8 @@ export function ContributionsTab() {
                 <Td>
                   {c.member ? (
                     `${c.member.firstName} ${c.member.lastName}`
+                  ) : c.donorName ? (
+                    c.donorName
                   ) : (
                     <span className="text-slate-400">Anonymous</span>
                   )}
@@ -258,6 +260,8 @@ export function ContributionsTab() {
                 <Td>
                   {c.payslipId ? (
                     <Badge tone="violet">Payroll repayment</Badge>
+                  ) : c.givingType?.name === 'Online Giving' || c.paymentMethod === 'ONLINE' ? (
+                    <Badge tone="green">Online giving</Badge>
                   ) : c.pledgeId ? (
                     <Badge tone="blue">Pledge{c.pledge?.campaign ? `: ${c.pledge.campaign}` : ''}</Badge>
                   ) : (

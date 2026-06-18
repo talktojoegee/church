@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -92,6 +93,27 @@ export class PublicTestimonyDto {
   @IsOptional() @IsString() categoryId?: string;
 }
 
+export class PublicEventRegisterDto {
+  @IsString() @MinLength(2) guestName!: string;
+  @IsOptional() @IsString() guestPhone?: string;
+}
+
+export class CreateSiteGalleryDto {
+  @IsString() @MinLength(2) title!: string;
+  @IsOptional() @IsString() caption?: string;
+  @IsString() imageUrl!: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) sortOrder?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+export class UpdateSiteGalleryDto {
+  @IsOptional() @IsString() @MinLength(2) title?: string;
+  @IsOptional() @IsString() caption?: string;
+  @IsOptional() @IsString() imageUrl?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) sortOrder?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
 export class UpdateGivingSettingsDto {
   @IsOptional() @IsString() givingIntro?: string;
   @IsOptional() @IsString() givingInstructions?: string;
@@ -99,4 +121,24 @@ export class UpdateGivingSettingsDto {
   @IsOptional() @IsString() givingAccountName?: string;
   @IsOptional() @IsString() givingAccountNumber?: string;
   @IsOptional() @IsBoolean() givingPaystackEnabled?: boolean;
+  @IsOptional() @IsString() paystackPublicKey?: string;
+  @IsOptional() @IsString() paystackSecretKey?: string;
+}
+
+export class PublicVerifyGivingDto {
+  @IsString() reference!: string;
+  @Type(() => Number) @IsNumber() @Min(100) amount!: number;
+  @IsString() @MinLength(2) donorName!: string;
+  @IsOptional() @IsEmail() email?: string;
+}
+
+export class UpdateAboutSettingsDto {
+  @IsOptional() @IsString() pastorName?: string;
+  @IsOptional() @IsString() pastorTitle?: string;
+  @IsOptional() @IsString() pastorBio?: string;
+  @IsOptional() @IsString() pastorPhotoUrl?: string;
+  @IsOptional() @IsString() aboutFounded?: string;
+  @IsOptional() @IsString() aboutStory?: string;
+  @IsOptional() @IsString() aboutBeliefs?: string;
+  @IsOptional() @IsString() aboutValues?: string;
 }
