@@ -229,6 +229,37 @@ pnpm db:seed
 GitHub push → Hostinger pulls → bash scripts/hostinger-deploy.sh → restart Node apps
 ```
 
+### Hostinger `.builds` folder (esbuild EACCES)
+
+If install fails with:
+
+```
+spawnSync .../esbuild/bin/esbuild EACCES
+```
+
+Hostinger runs builds inside `.builds/source/repository/`, which often has **`noexec`** — native binaries cannot run. **Do not build on Hostinger’s Git auto-deploy.**
+
+**Recommended:** use **GitHub Actions** (`.github/workflows/build.yml`) to build on push, then deploy the artifact:
+
+1. Push to `main` → Actions tab → download `chms-deploy` artifact
+2. Or build locally: `pnpm build:prod`
+3. Upload to server via SSH/FTP:
+   - `apps/api/dist/` + API `node_modules` (production)
+   - `apps/web/.next/standalone/`
+   - `prisma/`, `.env`
+
+**Alternative — SSH build in `public_html` (not `.builds`):**
+
+```bash
+cd ~/domains/api.paggglobal.org/public_html
+git pull origin main
+source ~/.bashrc
+export TMPDIR=$HOME/tmp
+bash scripts/hostinger-deploy.sh
+```
+
+Disable Hostinger’s automatic install/build in Git settings; only use git pull + manual script in `public_html`.
+
 ---
 
 ## Troubleshooting

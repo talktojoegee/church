@@ -1,0 +1,77 @@
+name: Build for production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build:prod
+        env:
+          NEXT_PUBLIC_API_URL: https://api.paggglobal.org/api
+          NEXT_PUBLIC_APP_NAME: Power And Glory Generation
+
+      - name: Package deploy bundle
+        run: |
+          mkdir -p deploy-bundle
+          cp -r apps/api/dist deploy-bundle/api-dist
+          cp -r apps/web/.next/standalone deploy-bundle/web-standalone
+          cp -r prisma deploy-bundle/prisma
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml deploy-bundle/
+          cp apps/api/package.json deploy-bundle/api-package.json
+          tar -czf chms-deploy.tar.gz -C deploy-bundle .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chms-deploy
+          path: chms-deploy.tar.gz
+          retention-days: 7
+
+  # Optional: uncomment and add GitHub secrets to auto-deploy via SSH
+  # Secrets: HOSTINGER_HOST, HOSTINGER_USER, HOSTINGER_SSH_KEY, HOSTINGER_PATH
+  #
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: chms-deploy
+  #     - name: Deploy over SSH
+  #       uses: appleboy/scp-action@v0.1.7
+  #       with:
+  #         host: ${{ secrets.HOSTINGER_HOST }}
+  #         username: ${{ secrets.HOSTINGER_USER }}
+  #         key: ${{ secrets.HOSTINGER_SSH_KEY }}
+  #         source: chms-deploy.tar.gz
+  #         target: ${{ secrets.HOSTINGER_PATH }}
+  #     - name: Extract and restart
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.HOSTINGER_HOST }}
+  #         username: ${{ secrets.HOSTINGER_USER }}
+  #         key: ${{ secrets.HOSTINGER_SSH_KEY }}
+  #         script: |
+  #           cd ${{ secrets.HOSTINGER_PATH }}
+  #           tar -xzf chms-deploy.tar.gz
+  #           # restart Node apps in hPanel after deploy

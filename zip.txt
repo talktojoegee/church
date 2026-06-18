@@ -1,0 +1,13 @@
+cd /Users/josephgbudujoseph/Documents/Dev_env/Projects/Fullstack/church && \
+zip -r ../chms-deploy.zip . \
+  -x "./node_modules/*" \
+  -x "./apps/*/node_modules/*" \
+  -x "./packages/*/node_modules/*" \
+  -x "./apps/api/dist/*" \
+  -x "./apps/web/.next/*" \
+  -x "./apps/mobile/*" \
+  -x "./.git/*" \
+  -x "./.turbo/*" \
+  -x "./.env" \
+  -x "./*.DS_Store" \
+  -x "**/.DS_Store"

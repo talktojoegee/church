@@ -29,6 +29,11 @@ fi
 echo "==> Installing dependencies"
 pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
+# Hostinger .builds/ may mount noexec — native bins (esbuild) fail with EACCES.
+# If install fails here, build on GitHub Actions or locally and upload artifacts instead.
+find "$ROOT/node_modules" -type f -path '*/esbuild/bin/esbuild' -exec chmod +x {} + 2>/dev/null || true
+find "$ROOT/node_modules" -type f -path '*/@esbuild/*/bin/esbuild' -exec chmod +x {} + 2>/dev/null || true
+
 echo "==> Production build"
 pnpm build:prod
 
