@@ -10,7 +10,9 @@ export TMPDIR="${HOME}/tmp"
 mkdir -p "$TMPDIR"
 
 export PNPM_HOME="${HOME}/.local/share/pnpm"
+# Prefer user-installed pnpm over Hostinger Corepack (avoids version mismatch)
 export PATH="${PNPM_HOME}/bin:${PATH}"
+hash -r 2>/dev/null || true
 
 if ! command -v pnpm &>/dev/null; then
   echo "ERROR: pnpm not found. SSH in once and install:"
