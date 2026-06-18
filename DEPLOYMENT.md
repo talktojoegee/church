@@ -167,6 +167,70 @@ pm2 restart all   # VPS
 
 ---
 
+## GitHub deploy on Hostinger (shared hosting)
+
+Hostinger’s auto-install uses **Corepack**, which often fails on shared hosting. Install **pnpm once over SSH**, then let Git run a custom build script.
+
+### One-time SSH setup
+
+```bash
+export TMPDIR=$HOME/tmp
+mkdir -p $TMPDIR
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+source ~/.bashrc
+pnpm --version
+```
+
+Create production `.env` in the repo root on the server (not committed to Git):
+
+```bash
+nano ~/domains/api.paggglobal.org/public_html/.env
+```
+
+Create uploads directory:
+
+```bash
+mkdir -p ~/domains/api.paggglobal.org/uploads
+```
+
+### hPanel → Git → connect GitHub
+
+1. Open the site that holds the repo (e.g. `api.paggglobal.org`) → **Git** → connect your GitHub repo.
+2. **Disable** default “install dependencies” if it runs `corepack` / `pnpm` automatically.
+3. Set **Build command** to:
+
+```bash
+bash scripts/hostinger-deploy.sh
+```
+
+4. Add all production variables under **Node.js → Environment variables** (or keep a `.env` file on the server).
+
+### Two Node.js apps (same repo, two domains)
+
+After each deploy, restart **both** apps in hPanel:
+
+| Domain | Application root | Startup file |
+|--------|------------------|--------------|
+| `api.paggglobal.org` | `apps/api` | `dist/main.js` |
+| `paggglobal.org` | `apps/web/.next/standalone/apps/web` | `server.js` |
+
+Web app env: `NEXT_PUBLIC_API_URL=https://api.paggglobal.org/api`
+
+First deploy only (SSH):
+
+```bash
+cd ~/domains/api.paggglobal.org/public_html
+pnpm db:seed
+```
+
+### Git deploy flow
+
+```
+GitHub push → Hostinger pulls → bash scripts/hostinger-deploy.sh → restart Node apps
+```
+
+---
+
 ## Troubleshooting
 
 | Issue | Fix |
