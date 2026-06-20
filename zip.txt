@@ -7,6 +7,7 @@
 # Node version:       22.x
 # Package manager:    pnpm
 # Install command:    bash scripts/hostinger-install.sh
+#   (uses --ignore-scripts as fallback; pnpm-workspace.yaml sets esbuild: false)
 # Build command:      bash scripts/build-hostinger-api.sh
 # Output directory:   hostinger-api
 # Entry file:         dist/main.js
@@ -19,6 +20,7 @@
 # Node version:       22.x
 # Package manager:    pnpm
 # Install command:    bash scripts/hostinger-install.sh
+#   (uses --ignore-scripts as fallback; pnpm-workspace.yaml sets esbuild: false)
 # Build command:      bash scripts/build-hostinger-web.sh
 # Output directory:   apps/web/.next/standalone/apps/web
 # Entry file:         server.js

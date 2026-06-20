@@ -47,12 +47,5 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  },
-  "pnpm": {
-    "neverBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
-    ]
   }
 }
