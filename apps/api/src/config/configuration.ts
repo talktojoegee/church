@@ -29,7 +29,8 @@ export interface AppConfig {
 
 export default (): AppConfig => ({
   env: process.env.NODE_ENV ?? 'development',
-  port: parseInt(process.env.API_PORT ?? '4000', 10),
+  // Hostinger Node.js apps inject PORT; API_PORT is used on VPS/Docker.
+  port: parseInt(process.env.PORT ?? process.env.API_PORT ?? '4000', 10),
   apiPrefix: process.env.API_PREFIX ?? 'api',
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
     .split(',')

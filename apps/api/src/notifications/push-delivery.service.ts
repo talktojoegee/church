@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
-import { cert, getApps, initializeApp, type ServiceAccount } from 'firebase-admin/app';
-import { getMessaging, type Messaging } from 'firebase-admin/messaging';
+import type { ServiceAccount } from 'firebase-admin/app';
+import type { Messaging } from 'firebase-admin/messaging';
 import { PrismaService } from '../prisma/prisma.service';
 import type { NotifyPayload } from './notifications.service';
 
@@ -12,33 +12,34 @@ export class PushDeliveryService implements OnModuleInit {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  onModuleInit() {
+  async onModuleInit() {
     try {
       const jsonEnv = process.env.FCM_SERVICE_ACCOUNT_JSON?.trim();
       const pathEnv = process.env.FCM_SERVICE_ACCOUNT_PATH?.trim();
 
+      if (!jsonEnv && !pathEnv) {
+        this.logger.log('FCM not configured — in-app notifications only');
+        return;
+      }
+
+      // Lazy-load firebase-admin so shared hosts without FCM do not pull in grpc at startup.
+      const { cert, getApps, initializeApp } = await import('firebase-admin/app');
+      const { getMessaging } = await import('firebase-admin/messaging');
+
+      let cred: ServiceAccount;
       if (jsonEnv) {
-        const cred = JSON.parse(jsonEnv) as ServiceAccount;
-        if (!getApps().length) {
-          initializeApp({ credential: cert(cred) });
-        }
-        this.messaging = getMessaging();
-        this.logger.log('FCM push delivery enabled (JSON credentials)');
-        return;
+        cred = JSON.parse(jsonEnv) as ServiceAccount;
+      } else {
+        cred = JSON.parse(readFileSync(pathEnv!, 'utf8')) as ServiceAccount;
       }
 
-      if (pathEnv) {
-        const raw = readFileSync(pathEnv, 'utf8');
-        const cred = JSON.parse(raw) as ServiceAccount;
-        if (!getApps().length) {
-          initializeApp({ credential: cert(cred) });
-        }
-        this.messaging = getMessaging();
-        this.logger.log('FCM push delivery enabled (file credentials)');
-        return;
+      if (!getApps().length) {
+        initializeApp({ credential: cert(cred) });
       }
-
-      this.logger.log('FCM not configured — in-app notifications only');
+      this.messaging = getMessaging();
+      this.logger.log(
+        jsonEnv ? 'FCM push delivery enabled (JSON credentials)' : 'FCM push delivery enabled (file credentials)',
+      );
     } catch (err) {
       this.logger.warn(`FCM initialization failed: ${err}`);
       this.messaging = null;

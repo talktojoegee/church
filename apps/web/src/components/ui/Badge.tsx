@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-type Tone = 'gray' | 'green' | 'red' | 'amber' | 'blue' | 'brand';
+type Tone = 'gray' | 'green' | 'red' | 'amber' | 'blue' | 'brand' | 'violet';
 
 const tones: Record<Tone, string> = {
   gray: 'bg-slate-100 text-slate-700',
@@ -9,6 +9,7 @@ const tones: Record<Tone, string> = {
   amber: 'bg-amber-100 text-amber-700',
   blue: 'bg-sky-100 text-sky-700',
   brand: 'bg-brand-100 text-brand-700',
+  violet: 'bg-violet-100 text-violet-700',
 };
 
 export function Badge({

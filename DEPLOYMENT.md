@@ -1,6 +1,120 @@
-# Deploying ChMS on Hostinger
+# Deploying ChMS
 
-This guide covers two deployment targets. **VPS is strongly recommended** for a Next.js + NestJS stack with background jobs and two Node processes.
+| Platform | Guide |
+|----------|--------|
+| **Hostinger Business (two Node.js apps)** | [hostinger/DEPLOYMENT.md](./hostinger/DEPLOYMENT.md) |
+| AWS EC2 + Docker | [aws/DEPLOYMENT.md](./aws/DEPLOYMENT.md) |
+| Hostinger VPS + Docker | See below |
+
+---
+
+## Hostinger VPS — Docker (recommended)
+
+Stack: **MySQL + NestJS API + Next.js + Caddy** (automatic HTTPS).
+
+| URL | Service |
+|-----|---------|
+| `https://paggglobal.org` | `web` container |
+| `https://api.paggglobal.org` | `api` container |
+
+### 1. VPS setup (one time)
+
+1. Create a Hostinger **VPS** (Ubuntu 22.04+).
+2. Point DNS **A records** to the VPS IP:
+   - `paggglobal.org`
+   - `www.paggglobal.org`
+   - `api.paggglobal.org`
+3. SSH in and install Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# log out and back in
+docker compose version
+```
+
+### 2. Clone the repo on the VPS
+
+```bash
+sudo mkdir -p /opt/chms
+sudo chown $USER:$USER /opt/chms
+git clone https://github.com/talktojoegee/church.git /opt/chms
+cd /opt/chms
+cp docker/.env.example docker/.env
+nano docker/.env   # passwords, JWT secrets, SMTP, etc.
+```
+
+Generate secrets:
+
+```bash
+openssl rand -base64 48
+```
+
+### 3. Start production stack
+
+```bash
+cd /opt/chms
+docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --build
+```
+
+First deploy — seed the database:
+
+```bash
+docker compose -f docker/docker-compose.prod.yml --env-file docker/.env \
+  exec api sh -c 'cd /app && ./node_modules/.bin/tsx prisma/seed.ts'
+```
+
+### 4. Verify
+
+```bash
+docker compose -f docker/docker-compose.prod.yml ps
+curl https://api.paggglobal.org/api/health
+```
+
+Open `https://paggglobal.org`.
+
+### 5. Deploy updates from your Mac
+
+```bash
+cp deploy.env.example deploy.env   # DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH=/opt/chms
+bash deploy-vps.sh
+bash deploy-vps.sh --seed          # first time only
+```
+
+Or on the VPS manually:
+
+```bash
+cd /opt/chms && git pull && docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --build
+```
+
+### Useful commands
+
+```bash
+# Logs
+docker compose -f docker/docker-compose.prod.yml logs -f api web caddy
+
+# Restart
+docker compose -f docker/docker-compose.prod.yml restart api web
+
+# Stop
+docker compose -f docker/docker-compose.prod.yml down
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `docker/docker-compose.prod.yml` | Production stack |
+| `docker/Dockerfile.api` | NestJS image |
+| `docker/Dockerfile.web` | Next.js image |
+| `docker/Caddyfile` | Reverse proxy + SSL |
+| `docker/.env` | Secrets (on VPS only) |
+
+---
+
+## Shared hosting (legacy — not recommended)
+
+This guide also covers shared hosting. **VPS + Docker** is strongly recommended for a Next.js + NestJS stack with background jobs and two Node processes.
 
 ---
 

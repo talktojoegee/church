@@ -7,6 +7,9 @@ dist/
 build/
 .next/
 out/
+hostinger-api/
+chms-deploy/
+chms-deploy.tar.gz
 *.tsbuildinfo
 
 # Turbo
@@ -17,6 +20,10 @@ out/
 .env.local
 .env.*.local
 !.env.example
+deploy.env
+
+# Docker production secrets on VPS
+docker/.env
 
 # Prisma
 prisma/*.db
@@ -27,9 +34,9 @@ npm-debug.log*
 pnpm-debug.log*
 logs/
 
-# Uploads (runtime media)
+# Uploads (runtime media storage — not apps/api/src/uploads NestJS module)
 apps/api/uploads/
-uploads/
+/uploads/
 
 # OS / editor
 .DS_Store

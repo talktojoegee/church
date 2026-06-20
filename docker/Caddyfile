@@ -1,0 +1,15 @@
+{
+	email {$CADDY_EMAIL}
+}
+
+paggglobal.org {
+	reverse_proxy web:3000
+}
+
+www.paggglobal.org {
+	redir https://paggglobal.org{uri} permanent
+}
+
+api.paggglobal.org {
+	reverse_proxy api:4000
+}

@@ -1,23 +1,22 @@
+# Local development — MySQL only (API + web run via pnpm dev on the host).
 services:
   mysql:
-    image: mysql:8.0
-    container_name: chms-mysql
+    image: mysql:8.4
     restart: unless-stopped
+    ports:
+      - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: chms_password
       MYSQL_DATABASE: chms
       MYSQL_USER: chms
       MYSQL_PASSWORD: chms_password
-    ports:
-      - "3306:3306"
     volumes:
-      - chms_mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pchms_password"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  chms_mysql_data:
+  mysql_data:

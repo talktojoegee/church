@@ -29,16 +29,10 @@ jobs:
           NEXT_PUBLIC_API_URL: https://api.paggglobal.org/api
           NEXT_PUBLIC_APP_NAME: Power And Glory Generation
 
-      # Full Linux build + node_modules — Hostinger shared hosting cannot run pnpm/esbuild locally.
       - name: Package deploy bundle
         run: |
-          tar -czf chms-deploy.tar.gz \
-            --exclude='.git' \
-            --exclude='apps/mobile' \
-            --exclude='.turbo' \
-            --exclude='apps/web/.next/cache' \
-            --exclude='.env' \
-            .
+          bash scripts/package-hostinger.sh /tmp/chms-hostinger-stage
+          tar -czf chms-deploy.tar.gz -C /tmp/chms-hostinger-stage .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

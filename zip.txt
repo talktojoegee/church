@@ -1,19 +1,37 @@
-# Build on your Mac is for GitHub push only — do NOT zip node_modules from Mac to Linux.
-# Use GitHub Actions artifact instead (Linux binaries).
+# === Hostinger Git deploy (hPanel → Node.js Apps) ===
+# Two separate apps — copy settings exactly from the tables below.
 
-# 1. Push to main → GitHub Actions → download "chms-deploy" artifact (chms-deploy.tar.gz)
-#
-# 2. Upload to Hostinger (from your Mac):
-#    scp chms-deploy.tar.gz u421975600@YOUR_HOSTINGER_IP:~/domains/api.paggglobal.org/
-#
-# 3. On Hostinger SSH:
-#    cd ~/domains/api.paggglobal.org
-#    rm -rf public_html/*
-#    tar -xzf chms-deploy.tar.gz -C public_html
-#    nano public_html/.env
-#    cd public_html && ./node_modules/.bin/prisma migrate deploy
-#    ./node_modules/.bin/tsx prisma/seed.ts   # first time only
-#
-# 4. hPanel Node.js apps:
-#    api.paggglobal.org → apps/api → dist/main.js
-#    paggglobal.org → apps/web/.next/standalone/apps/web → server.js
+# --- API: api.paggglobal.org ---
+# Root directory:     ./
+# Framework:          NestJS (or Other)
+# Node version:       22.x
+# Package manager:    pnpm
+# Build command:      bash scripts/build-hostinger-api.sh
+# Output directory:   hostinger-api
+# Entry file:         dist/main.js
+# Environment vars:   see hostinger.env.example (API section)
+# IMPORTANT: Turn OFF CDN for api.paggglobal.org (Performance → CDN)
+
+# --- Web: paggglobal.org ---
+# Root directory:     ./
+# Framework:          Next.js (or Other)
+# Node version:       22.x
+# Package manager:    pnpm
+# Build command:      bash scripts/build-hostinger-web.sh
+# Output directory:   apps/web/.next/standalone/apps/web
+# Entry file:         server.js
+# Environment vars:   NEXT_PUBLIC_API_URL, NEXT_PUBLIC_APP_NAME (build-time)
+
+# Migrations (from Mac, not Hostinger):
+#   bash scripts/migrate-hostinger.sh
+
+# Restart via SSH:
+ssh -i ~/.ssh/hostinger_paggglobal -p 65002 u421975600@92.113.28.56 \
+  'touch ~/domains/api.paggglobal.org/public_html/apps/api/tmp/restart.txt \
+        ~/domains/api.paggglobal.org/public_html/apps/web/.next/standalone/apps/web/tmp/restart.txt'
+
+# --- Legacy SSH/Docker deploy (alternative to Git) ---
+# bash scripts/deploy.sh
+
+# --- AWS EC2 ---
+# aws/DEPLOYMENT.md

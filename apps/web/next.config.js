@@ -5,6 +5,8 @@ const nextConfig = {
   // 'standalone' produces a self-contained server bundle that runs well as a
   // single Node app on Hostinger (Setup Node.js App) or under PM2 on a VPS.
   output: 'standalone',
+  // Docker linux/amd64 builds on Mac can be slow during static page generation.
+  staticPageGenerationTimeout: 180,
   // Trace from the monorepo root so workspace deps are bundled into standalone.
   outputFileTracingRoot: path.join(__dirname, '../../'),
   reactStrictMode: true,

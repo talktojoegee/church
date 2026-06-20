@@ -1,3 +1,4 @@
+import './load-env';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
@@ -26,6 +27,9 @@ async function bootstrap() {
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    optionsSuccessStatus: 204,
   });
 
   app.useGlobalPipes(
@@ -37,8 +41,11 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(port);
-  Logger.log(`ChMS API running on http://localhost:${port}/${apiPrefix}`, 'Bootstrap');
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`ChMS API running on http://0.0.0.0:${port}/${apiPrefix}`, 'Bootstrap');
 }
 
-void bootstrap();
+void bootstrap().catch((error) => {
+  Logger.error('Failed to start API', error instanceof Error ? error.stack : error);
+  process.exit(1);
+});

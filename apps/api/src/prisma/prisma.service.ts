@@ -2,9 +2,10 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { PrismaClient } from '@prisma/client';
 import { AuditContextService } from '../audit/audit-context.service';
 import { createPrismaAuditExtension } from './prisma-audit.extension';
+import { createPrismaClient } from './prisma-client.factory';
 
 function createExtendedPrismaClient(auditContext: AuditContextService) {
-  const base = new PrismaClient();
+  const base = createPrismaClient();
   const extended = base.$extends(
     createPrismaAuditExtension(auditContext, async (input) => {
       await base.auditLog.create({
@@ -57,13 +58,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit(): Promise<void> {
-    try {
-      await this.base.$connect();
-      this.logger.log('Connected to MySQL database');
-    } catch (error) {
-      this.logger.error('Failed to connect to the database', error as Error);
-      throw error;
-    }
+    // MariaDB adapter connects lazily on first query. $connect() still loads the Rust
+    // query engine unless Prisma was generated with engineType = "client".
+    this.logger.log('Prisma client ready (MariaDB adapter)');
   }
 
   async onModuleDestroy(): Promise<void> {

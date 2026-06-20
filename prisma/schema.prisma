@@ -7,7 +7,8 @@
 // - snake_case table names via @@map for clean SQL on shared hosting.
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client" // JS driver adapter — no Rust query engine on Hostinger
 }
 
 datasource db {

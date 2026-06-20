@@ -221,6 +221,20 @@ async function seedDemoData(
     return;
   }
 
+  const existingDemoMember = await prisma.member.findFirst({
+    where: { branchId: hqId, membershipNumber: 'HQ-0101' },
+    select: { id: true },
+  });
+  if (existingDemoMember) {
+    await prisma.setting.upsert({
+      where: { churchId_key: { churchId, key: 'demo_data_seeded' } },
+      update: { value: 'true' },
+      create: { churchId, key: 'demo_data_seeded', value: 'true' },
+    });
+    console.log('  Demo data already present — skip (partial seed from prior run)');
+    return;
+  }
+
   console.log('  Seeding demo data…');
 
   const ikj = await prisma.branch.upsert({

@@ -1,4 +1,5 @@
 import { API_URL } from './api';
+import { fetchWithTimeout } from './fetch-with-timeout';
 
 export interface PublicBranding {
   name: string;
@@ -179,22 +180,13 @@ export interface GivingData {
 }
 
 async function siteFetch<T>(path: string, init?: RequestInit & { revalidate?: number | false }): Promise<T | null> {
-  try {
-    const isMutation = init?.method && init.method !== 'GET';
-    const res = await fetch(`${API_URL}/site/public${path}`, {
-      ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
-      ...(isMutation
-        ? { cache: 'no-store' as RequestCache }
-        : init?.revalidate === false
-          ? { cache: 'no-store' as RequestCache }
-          : { next: { revalidate: typeof init?.revalidate === 'number' ? init.revalidate : 60 } }),
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
+  const res = await fetchWithTimeout(`${API_URL}/site/public${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    revalidate: init?.revalidate,
+  });
+  if (!res?.ok) return null;
+  return res.json();
 }
 
 export const fetchPublicHome = () => siteFetch<PublicHomeData>('/home');

@@ -1,4 +1,5 @@
 import { API_URL } from './api';
+import { fetchWithTimeout } from './fetch-with-timeout';
 
 export interface PublicBranding {
   name: string;
@@ -19,13 +20,7 @@ export interface PublicBranding {
 }
 
 export async function fetchPublicBranding(): Promise<PublicBranding | null> {
-  try {
-    const res = await fetch(`${API_URL}/settings/public`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
+  const res = await fetchWithTimeout(`${API_URL}/settings/public`, { revalidate: 60 });
+  if (!res?.ok) return null;
+  return res.json();
 }

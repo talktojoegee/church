@@ -1,3 +1,4 @@
+import type { ReactNode, TdHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 export function Table({ children }: { children: React.ReactNode }) {
@@ -21,9 +22,16 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
   );
 }
 
-export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
+export function Td({
+  children,
+  className,
+  ...props
+}: TdHTMLAttributes<HTMLTableCellElement> & { children?: ReactNode }) {
   return (
-    <td className={cn('border-b border-slate-100 px-4 py-3 text-slate-700 dark:border-slate-800 dark:text-slate-300', className)}>
+    <td
+      className={cn('border-b border-slate-100 px-4 py-3 text-slate-700 dark:border-slate-800 dark:text-slate-300', className)}
+      {...props}
+    >
       {children}
     </td>
   );
