@@ -21,7 +21,7 @@ if ! command -v pnpm &>/dev/null; then
 fi
 
 echo "==> pnpm $(pnpm --version) in $(pwd)"
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+bash "$ROOT/scripts/hostinger-install.sh"
 
 bash "$ROOT/scripts/build-hostinger-api.sh"
 
