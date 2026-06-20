@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+
+# Prisma local db
+prisma/*.db

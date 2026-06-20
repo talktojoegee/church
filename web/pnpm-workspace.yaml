@@ -1,0 +1,9 @@
+packages:
+  - "."
+
+strictDepBuilds: false
+
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false

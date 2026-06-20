@@ -1,99 +1,59 @@
 # Church Management System (ChMS)
 
-A full-featured church management platform — finance, payroll, HR, attendance,
-membership, follow-up, sermons, testimonies, outreaches, communication, and
-reporting.
+Three **standalone apps** — no monorepo. Deploy API and Web separately on Hostinger.
 
-Built as a TypeScript monorepo:
+| App | Folder | Deploy to | Stack |
+|-----|--------|-----------|-------|
+| **API** | [`api/`](api/) | `api.paggglobal.org` | NestJS + Prisma + MySQL |
+| **Web** | [`web/`](web/) | `paggglobal.org` | Next.js 15 |
+| **Mobile** | [`mobile/`](mobile/) | App stores | Flutter |
 
-- **`apps/api`** — NestJS REST API (MySQL via Prisma)
-- **`apps/web`** — Next.js (App Router) frontend
-- **`packages/shared`** — shared types, permission catalog, role definitions
-- **`prisma`** — database schema, migrations, and seed
+## Hostinger deploy (recommended)
 
-## Tech stack
+Each app has its own `README.md` with exact hPanel settings:
 
-NestJS · Next.js · Prisma · MySQL 8 · Tailwind CSS · TanStack Query · JWT (RBAC)
+1. **Create two Node.js apps** in hPanel (one per domain)
+2. **Connect separate GitHub repos** (see below) or use subfolder deploy with root directory `./` after splitting repos
+3. Follow [`api/README.md`](api/README.md) for NestJS settings
+4. Follow [`web/README.md`](web/README.md) for Next.js settings
+5. **Disable CDN** on `api.paggglobal.org`
+6. Run migrations from Mac: `cd api && bash scripts/migrate-hostinger.sh`
 
-## Prerequisites
+## Split into separate GitHub repos
 
-- Node.js >= 20
-- pnpm >= 10 (`corepack enable`)
-- Docker (for local MySQL) — or any MySQL 8 instance
-
-## Getting started (local)
-
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Create your .env from the template
-cp .env.example .env
-
-# 3. Start MySQL (Docker)
-pnpm docker:up
-
-# 4. Build shared package + generate Prisma client
-pnpm --filter @chms/shared build
-pnpm db:generate
-
-# 5. Run the first migration
-pnpm db:migrate -- --name init
-
-# 6. Seed roles, permissions, church + super admin
-pnpm db:seed
-
-# 7. Run everything (API + web)
-pnpm dev
-```
-
-- Web: http://localhost:3000
-- API: http://localhost:4000/api
-- API health: http://localhost:4000/api/health
-
-Default super admin comes from `.env` (`SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`).
-
-## Useful scripts
-
-| Command | Description |
-|---|---|
-| `pnpm dev` | Run API + web in watch mode |
-| `pnpm build` | Build all apps |
-| `pnpm db:migrate` | Create/apply a dev migration |
-| `pnpm db:deploy` | Apply migrations in production |
-| `pnpm db:seed` | Seed reference data |
-| `pnpm db:studio` | Open Prisma Studio |
-
-## Deployment (Hostinger)
-
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for full VPS and shared-hosting instructions.
-
-Quick production build:
+For the cleanest Hostinger Git integration, publish each folder as its own repo:
 
 ```bash
-pnpm build:prod
-pm2 start ecosystem.config.cjs   # VPS only
+# API
+cd api && git init && git add . && git commit -m "Initial API"
+git remote add origin git@github.com:YOU/chms-api.git && git push -u origin main
+
+# Web
+cd web && git init && git add . && git commit -m "Initial web"
+git remote add origin git@github.com:YOU/chms-web.git && git push -u origin main
+
+# Mobile (optional)
+cd mobile && git init && ...
 ```
 
-Two supported targets:
+Point Hostinger:
+- `api.paggglobal.org` → **chms-api** repo
+- `paggglobal.org` → **chms-web** repo
 
-1. **VPS (recommended):** PM2 + Nginx reverse proxy + MySQL
-2. **Business shared hosting:** NestJS API + Next.js standalone as Node apps via hPanel
+## Legacy / optional
 
-## Module overview
+- **Docker VPS / AWS:** `docker/`, `aws/` (optional; not required for Hostinger shared hosting)
+- **SSH tarball deploy:** deprecated — use Git deploy per app instead
 
-| Module | Status |
-|---|---|
-| Auth & RBAC | ✅ |
-| Branches, Departments, Members | ✅ |
-| Groups & Attendance | ✅ |
-| Finance (tithes, funds, expenses, pledges) | ✅ |
-| HR & Payroll | ✅ |
-| Sermons, Testimonies, Events, Outreaches | ✅ |
-| Communication (email/SMS) & Follow-up | ✅ |
-| Reports & Dashboard | ✅ |
-| Settings | ✅ |
+## Local development
 
-## Roadmap
+```bash
+# Terminal 1 — API
+cd api && pnpm install && cp .env.example .env && pnpm dev
 
-All core phases (0–9) are implemented. Future enhancements: file uploads for sermons/photos, SMS provider integration, PDF/Excel export, member portal, and mobile app.
+# Terminal 2 — Web
+cd web && pnpm install && echo 'NEXT_PUBLIC_API_URL=http://localhost:4000/api' > .env.local && pnpm dev
+
+# Mobile
+cd mobile && flutter pub get && flutter run
+```
