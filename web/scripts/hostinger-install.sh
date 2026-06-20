@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hostinger hPanel → Install command
+# Hostinger hPanel → Install command (npm — avoids pnpm v11 strictDepBuilds failures)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,12 +13,6 @@ export TMPDIR="${TMPDIR:-${HOME:-/tmp}/tmp}"
 mkdir -p "$TMPDIR"
 export CI=true
 
-pnpm install \
-  --config.strict-dep-builds=false \
-  --config.verify-deps-before-run=false \
-  --frozen-lockfile 2>/dev/null \
-  || pnpm install \
-    --config.strict-dep-builds=false \
-    --config.verify-deps-before-run=false
+npm ci 2>/dev/null || npm install
 
 echo "==> Install complete"

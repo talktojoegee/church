@@ -5,9 +5,9 @@ Standalone frontend for [Power And Glory Generation](https://paggglobal.org). De
 ## Local development
 
 ```bash
-pnpm install
+npm install
 echo 'NEXT_PUBLIC_API_URL=http://localhost:4000/api' > .env.local
-pnpm dev
+npm run dev
 ```
 
 Web: http://localhost:3000
@@ -22,9 +22,9 @@ Create a **Node.js app** for `paggglobal.org` and connect this GitHub repo.
 | Branch | `main` |
 | Node version | **22.x** |
 | Root directory | `web` |
-| Package manager | **pnpm** |
-| Install command | `bash scripts/hostinger-install.sh` |
-| Build command | `pnpm run build:hostinger` |
+| Package manager | **npm** |
+| Install command | `bash scripts/hostinger-install.sh` (or default `npm install`) |
+| Build command | `npm run build:hostinger` |
 | Output directory | `.next/standalone` |
 | Entry file | `server.js` |
 
@@ -50,7 +50,7 @@ cp -r public .next/standalone/public
 Or use build command:
 
 ```bash
-pnpm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public
+npm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public
 ```
 
 ### Test
