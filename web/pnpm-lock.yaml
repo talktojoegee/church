@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@chms/shared':
-        specifier: file:./src/shared
-        version: file:src/shared
       '@tanstack/react-query':
         specifier: ^5.62.7
         version: 5.101.0(react@19.2.7)
@@ -69,9 +66,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@chms/shared@file:src/shared':
-    resolution: {directory: src/shared, type: directory}
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -1945,8 +1939,6 @@ packages:
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@chms/shared@file:src/shared': {}
 
   '@emnapi/core@1.10.0':
     dependencies:

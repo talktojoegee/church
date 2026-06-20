@@ -21,7 +21,7 @@ Create a **Node.js app** for `paggglobal.org` and connect this GitHub repo.
 | Framework | Next.js |
 | Branch | `main` |
 | Node version | **22.x** |
-| Root directory | `./` |
+| Root directory | `web` |
 | Package manager | **pnpm** |
 | Install command | `bash scripts/hostinger-install.sh` |
 | Build command | `pnpm run build:hostinger` |

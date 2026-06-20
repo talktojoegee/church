@@ -14,7 +14,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@chms/shared": "file:./src/shared",
     "@tanstack/react-query": "^5.62.7",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
