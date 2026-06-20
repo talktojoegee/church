@@ -6,7 +6,6 @@ cd "$(dirname "$0")/.."
 if [[ ! -f src/shared/index.ts ]]; then
   echo "ERROR: web/src/shared is missing on the server."
   echo "  In hPanel → Git → Root directory must be: web"
-  echo "  (Monorepo repo: talktojoegee/church, not the api folder)"
   exit 1
 fi
 
@@ -14,8 +13,15 @@ export TMPDIR="${TMPDIR:-${HOME:-/tmp}/tmp}"
 mkdir -p "$TMPDIR"
 export CI=true
 
-# strict-dep-builds=false: don't fail when sharp/unrs-resolver native builds are skipped
-pnpm install --ignore-scripts --config.strict-dep-builds=false --frozen-lockfile \
-  2>/dev/null \
-  || pnpm install --ignore-scripts --config.strict-dep-builds=false
+# Approve sharp/unrs-resolver in pnpm-workspace.yaml; skip scripts (noexec on Hostinger).
+pnpm install \
+  --ignore-scripts \
+  --config.strict-dep-builds=false \
+  --config.verify-deps-before-run=false \
+  --frozen-lockfile 2>/dev/null \
+  || pnpm install \
+    --ignore-scripts \
+    --config.strict-dep-builds=false \
+    --config.verify-deps-before-run=false
+
 echo "==> Install complete"

@@ -1,10 +1,12 @@
 packages:
   - "."
 
-# pnpm v11 defaults strictDepBuilds=true — fail if any build script is blocked.
-# Hostinger .builds/ is noexec; we use --ignore-scripts on install anyway.
+# pnpm v11: strictDepBuilds defaults true — must approve native addons or install fails.
+# Scripts are skipped on Hostinger via --ignore-scripts (noexec .builds/).
 strictDepBuilds: false
 verifyDepsBeforeRun: false
 
 allowBuilds:
   esbuild: false
+  sharp: true
+  unrs-resolver: true
