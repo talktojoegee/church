@@ -11,8 +11,8 @@ dist/
 .env.local
 .env.*.local
 
-# Uploads
-uploads/
+# Runtime user uploads (not api/src/uploads module)
+/uploads/
 
 # Logs
 *.log

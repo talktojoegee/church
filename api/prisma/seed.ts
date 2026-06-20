@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import '../src/load-env';
 import * as argon2 from 'argon2';
 import {
   ALL_PERMISSIONS,
@@ -7,8 +7,9 @@ import {
   ROLE_PERMISSIONS,
   SYSTEM_ROLES,
 } from '@chms/shared';
+import { createPrismaClient } from '../src/prisma/prisma-client.factory';
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 function slugify(value: string): string {
   return value
