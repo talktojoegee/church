@@ -13,14 +13,11 @@ export TMPDIR="${TMPDIR:-${HOME:-/tmp}/tmp}"
 mkdir -p "$TMPDIR"
 export CI=true
 
-# Approve sharp/unrs-resolver in pnpm-workspace.yaml; skip scripts (noexec on Hostinger).
 pnpm install \
-  --ignore-scripts \
   --config.strict-dep-builds=false \
   --config.verify-deps-before-run=false \
   --frozen-lockfile 2>/dev/null \
   || pnpm install \
-    --ignore-scripts \
     --config.strict-dep-builds=false \
     --config.verify-deps-before-run=false
 
