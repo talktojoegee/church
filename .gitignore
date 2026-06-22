@@ -4,8 +4,20 @@ Thumbs.db
 .idea/
 *.swp
 
+# Dependencies
+node_modules/
+.pnpm-store/
+
 # Local secrets (each app has its own .env)
 deploy.env
+api/.env
+web/.env.local
+
+# Build outputs
+api/dist/
+packages/shared/dist/
+web/.next/
+dist/
 
 # Legacy artifacts
 chms-deploy/

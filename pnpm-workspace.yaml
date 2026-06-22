@@ -1,5 +1,8 @@
 packages:
-  - "."
+  - "api"
+  - "web"
+  - "e2e"
+  - "packages/*"
 
 # Hostinger .builds/ is noexec — skip esbuild postinstall (EACCES).
 strictDepBuilds: false

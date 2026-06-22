@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Hostinger hPanel → Install command (npm — avoids pnpm v11 strictDepBuilds failures)
+# Hostinger hPanel → Install command (monorepo root install).
 set -euo pipefail
-cd "$(dirname "$0")/.."
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
 
-if [[ ! -f src/shared/index.ts ]]; then
-  echo "ERROR: web/src/shared is missing on the server."
-  echo "  In hPanel → Git → Root directory must be: web"
+if [[ ! -f packages/shared/index.ts ]]; then
+  echo "ERROR: packages/shared is missing."
+  echo "  Deploy from monorepo root or set Git root to repo root with web output in web/."
   exit 1
 fi
 
@@ -13,6 +14,6 @@ export TMPDIR="${TMPDIR:-${HOME:-/tmp}/tmp}"
 mkdir -p "$TMPDIR"
 export CI=true
 
-npm ci 2>/dev/null || npm install
+pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 
-echo "==> Install complete"
+echo "==> Install complete (monorepo)"

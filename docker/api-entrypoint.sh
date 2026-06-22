@@ -1,8 +1,7 @@
 #!/bin/sh
 set -e
-cd /app
+cd /app/api
 echo "==> Applying database migrations"
-./node_modules/.bin/prisma migrate deploy
-cd /app/apps/api
+/app/node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma
 echo "==> Starting API"
 exec node dist/main.js

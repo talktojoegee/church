@@ -28,12 +28,12 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { CONTENT_STATUS_TONES, STATUS_TONES, humanize } from '@/lib/constants';
 
 const QUICK_ACTIONS = [
-  { href: '/members', label: 'Add member', desc: 'Register a person', icon: UserPlus, color: 'from-violet-500 to-purple-600' },
-  { href: '/attendance', label: 'Record service', desc: 'Log attendance', icon: CalendarCheck, color: 'from-sky-500 to-blue-600' },
+  { href: '/members', label: 'Add member', desc: 'Register a person', icon: UserPlus, color: 'from-brand-700 to-brand-500' },
+  { href: '/attendance', label: 'Record service', desc: 'Log attendance', icon: CalendarCheck, color: 'from-brand-600 to-flame-orange' },
   { href: '/finance', label: 'Record giving', desc: 'Tithes & offerings', icon: Wallet, color: 'from-emerald-500 to-teal-600' },
   { href: '/follow-up', label: 'Follow-up', desc: 'Pastoral care tasks', icon: PhoneCall, color: 'from-rose-500 to-pink-600' },
-  { href: '/communication', label: 'Send message', desc: 'Email or SMS', icon: Mail, color: 'from-amber-500 to-orange-500' },
-  { href: '/reports', label: 'View reports', desc: 'Analytics & trends', icon: BarChart3, color: 'from-indigo-500 to-blue-700' },
+  { href: '/communication', label: 'Send message', desc: 'Email or SMS', icon: Mail, color: 'from-gold to-gold-light' },
+  { href: '/reports', label: 'View reports', desc: 'Analytics & trends', icon: BarChart3, color: 'from-brand-900 to-brand-700' },
 ] as const;
 
 export default function DashboardPage() {
@@ -80,7 +80,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-6 text-white shadow-xl sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-flame-orange p-6 text-white shadow-xl sm:p-8">
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-white/5" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
             value={loading ? '…' : (o?.attendance?.monthAverage ?? 0)}
             hint={`Last service: ${o?.attendance?.lastTotal ?? 0} · Peak ${o?.attendance?.monthPeak ?? 0}`}
             icon={<CalendarCheck size={22} />}
-            color="blue"
+            color="brand"
           />
         </Link>
         <Link href="/finance">

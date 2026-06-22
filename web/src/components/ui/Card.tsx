@@ -67,14 +67,19 @@ export function StatCard({
 }
 
 const COLOR_SCHEMES = {
+  brand: {
+    bg: 'from-brand-700 to-brand-500',
+    ring: 'ring-brand-200',
+    icon: 'bg-white/20 text-white',
+  },
   violet: {
-    bg: 'from-violet-500 to-purple-600',
-    ring: 'ring-violet-200',
+    bg: 'from-brand-800 to-brand-600',
+    ring: 'ring-brand-200',
     icon: 'bg-white/20 text-white',
   },
   blue: {
-    bg: 'from-sky-500 to-blue-600',
-    ring: 'ring-sky-200',
+    bg: 'from-brand-700 to-flame-orange',
+    ring: 'ring-orange-200',
     icon: 'bg-white/20 text-white',
   },
   emerald: {
@@ -93,8 +98,8 @@ const COLOR_SCHEMES = {
     icon: 'bg-white/20 text-white',
   },
   indigo: {
-    bg: 'from-indigo-500 to-blue-700',
-    ring: 'ring-indigo-200',
+    bg: 'from-brand-900 to-brand-700',
+    ring: 'ring-brand-200',
     icon: 'bg-white/20 text-white',
   },
 } as const;

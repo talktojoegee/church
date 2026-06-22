@@ -28,10 +28,10 @@ export function BarChart({
   const plotHeight = height - LABEL_ROW;
 
   const barClass = {
-    brand: 'bg-gradient-to-t from-brand-600 to-brand-400',
+    brand: 'bg-gradient-to-t from-brand-600 to-flame-orange',
     emerald: 'bg-gradient-to-t from-emerald-600 to-emerald-400',
-    violet: 'bg-gradient-to-t from-violet-600 to-violet-400',
-    sky: 'bg-gradient-to-t from-sky-600 to-sky-400',
+    violet: 'bg-gradient-to-t from-brand-800 to-brand-500',
+    sky: 'bg-gradient-to-t from-brand-700 to-gold',
   }[color];
 
   return (
@@ -157,9 +157,9 @@ export function GroupedBarChart({
 }
 
 const ATTENDANCE_SERIES = [
-  { key: 'male' as const, label: 'Male', bar: 'bg-gradient-to-t from-sky-600 to-sky-400' },
-  { key: 'female' as const, label: 'Female', bar: 'bg-gradient-to-t from-violet-600 to-violet-400' },
-  { key: 'children' as const, label: 'Children', bar: 'bg-gradient-to-t from-amber-500 to-amber-300' },
+  { key: 'male' as const, label: 'Male', bar: 'bg-gradient-to-t from-brand-700 to-brand-500' },
+  { key: 'female' as const, label: 'Female', bar: 'bg-gradient-to-t from-flame to-flame-orange' },
+  { key: 'children' as const, label: 'Children', bar: 'bg-gradient-to-t from-gold to-gold-light' },
   { key: 'newcomers' as const, label: 'Newcomers', bar: 'bg-gradient-to-t from-emerald-600 to-emerald-400' },
 ];
 
@@ -192,9 +192,9 @@ export function AttendanceTrendChart({
   const plotHeight = height - LEGEND_ROW - LABEL_ROW - 8;
 
   const legendSwatch: Record<string, string> = {
-    male: 'bg-sky-500',
-    female: 'bg-violet-500',
-    children: 'bg-amber-500',
+    male: 'bg-brand-600',
+    female: 'bg-flame-orange',
+    children: 'bg-gold',
     newcomers: 'bg-emerald-500',
   };
 

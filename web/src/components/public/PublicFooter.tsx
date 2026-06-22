@@ -27,7 +27,7 @@ export function PublicFooter({
     <footer className="bg-brand-900 text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
         <div>
-          <ChurchLogo name={name} logoUrl={logoUrl} variant="sidebar" />
+          <ChurchLogo name={name} logoUrl={logoUrl} variant="sidebar" showName={false} />
           {tagline && <p className="mt-3 text-sm text-white/70">{tagline}</p>}
         </div>
 

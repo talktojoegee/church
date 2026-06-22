@@ -1,59 +1,119 @@
 # Church Management System (ChMS)
 
-Three **standalone apps** — no monorepo. Deploy API and Web separately on Hostinger.
+**pnpm monorepo** — API, Web, shared types, and E2E tests in one repo.
 
-| App | Folder | Deploy to | Stack |
-|-----|--------|-----------|-------|
-| **API** | [`api/`](api/) | `api.paggglobal.org` | NestJS + Prisma + MySQL |
-| **Web** | [`web/`](web/) | `paggglobal.org` | Next.js 15 |
-| **Mobile** | [`mobile/`](mobile/) | App stores | Flutter |
+| Package | Path | Deploy to |
+|---------|------|-----------|
+| **API** | [`api/`](api/) | `api.paggglobal.org` |
+| **Web** | [`web/`](web/) | `paggglobal.org` |
+| **Shared** | [`packages/shared/`](packages/shared/) | (workspace library) |
+| **E2E** | [`e2e/`](e2e/) | (local / CI only) |
+| **Mobile** | [`mobile/`](mobile/) | App stores (Flutter) |
 
-## Hostinger deploy (recommended)
-
-Each app has its own `README.md` with exact hPanel settings:
-
-1. **Create two Node.js apps** in hPanel (one per domain)
-2. **Connect separate GitHub repos** (see below) or use subfolder deploy with root directory `./` after splitting repos
-3. Follow [`api/README.md`](api/README.md) for NestJS settings
-4. Follow [`web/README.md`](web/README.md) for Next.js settings
-5. **Disable CDN** on `api.paggglobal.org`
-6. Run migrations from Mac: `cd api && bash scripts/migrate-hostinger.sh`
-
-## Split into separate GitHub repos
-
-For the cleanest Hostinger Git integration, publish each folder as its own repo:
+## Quick start
 
 ```bash
-# API
-cd api && git init && git add . && git commit -m "Initial API"
-git remote add origin git@github.com:YOU/chms-api.git && git push -u origin main
+pnpm install
 
-# Web
-cd web && git init && git add . && git commit -m "Initial web"
-git remote add origin git@github.com:YOU/chms-web.git && git push -u origin main
+# Terminal 1 — MySQL + API
+docker compose up -d
+cp api/.env.example api/.env   # edit if needed
+pnpm db:migrate
+pnpm db:seed
+pnpm dev:api
 
-# Mobile (optional)
-cd mobile && git init && ...
+# Terminal 2 — Web
+echo 'NEXT_PUBLIC_API_URL=http://localhost:4000/api' > web/.env.local
+pnpm dev:web
 ```
 
-Point Hostinger:
-- `api.paggglobal.org` → **chms-api** repo
-- `paggglobal.org` → **chms-web** repo
+- API: http://localhost:4000/api  
+- Web: http://localhost:3000  
 
-## Legacy / optional
+## Monorepo scripts (root)
 
-- **Docker VPS / AWS:** `docker/`, `aws/` (optional; not required for Hostinger shared hosting)
-- **SSH tarball deploy:** deprecated — use Git deploy per app instead
+| Command | Description |
+|---------|-------------|
+| `pnpm install` | Install all workspace packages |
+| `pnpm dev` | API + Web in parallel |
+| `pnpm build` | Build shared, API, and Web |
+| `pnpm e2e` | Full stack E2E (Docker MySQL + API smoke + Playwright) |
+| `pnpm db:migrate` | Apply Prisma migrations |
+| `pnpm db:seed` | Seed database |
+
+## Hostinger Git deploy
+
+Deploy from this **single repo** with different root directories per app:
+
+### API (`api.paggglobal.org`)
+
+| Setting | Value |
+|---------|--------|
+| Root directory | **`api`** |
+| Install | `bash scripts/hostinger-install.sh` |
+| Build | `pnpm run build` |
+| Output | `dist` |
+| Entry | `main.js` |
+
+Install script runs `pnpm install` from **monorepo root** (parent of `api/`).
+
+### Web (`paggglobal.org`)
+
+| Setting | Value |
+|---------|--------|
+| Root directory | **`web`** |
+| Install | `bash scripts/hostinger-install.sh` |
+| Build | `pnpm run build:hostinger` |
+| Output | `.next/standalone` |
+| Entry | `server.js` |
+
+See [`api/README.md`](api/README.md) and [`web/README.md`](web/README.md) for env vars.
+
+### Zip deploy (alternative)
+
+```bash
+bash scripts/zip-api.sh
+bash scripts/zip-web.sh
+```
+
+## AWS deploy (EC2 + RDS + Docker)
+
+See **[`aws/SETUP.md`](aws/SETUP.md)** for your `paggglobal` instance (`32.196.184.5`) and RDS `chms`.
+
+```bash
+cp deploy.env.aws.example deploy.env
+cp docker/.env.aws.example docker/.env   # edit DATABASE_URL, JWT secrets
+bash deploy-aws.sh --setup               # first time
+bash deploy-aws.sh --seed                # seed admin user
+bash deploy-aws.sh                       # routine deploy
+```
 
 ## Local development
 
 ```bash
-# Terminal 1 — API
-cd api && pnpm install && cp .env.example .env && pnpm dev
+# All packages
+pnpm install
 
-# Terminal 2 — Web
-cd web && pnpm install && echo 'NEXT_PUBLIC_API_URL=http://localhost:4000/api' > .env.local && pnpm dev
+# Shared library
+pnpm build:shared
 
-# Mobile
+# API only
+cd api && pnpm dev
+
+# Web only  
+cd web && pnpm dev
+```
+
+## E2E tests
+
+```bash
+bash scripts/e2e.sh
+```
+
+Starts MySQL (Docker), migrates + seeds API, runs API smoke tests and Playwright public-page tests.
+
+## Mobile
+
+```bash
 cd mobile && flutter pub get && flutter run
 ```

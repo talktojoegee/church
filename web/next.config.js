@@ -3,6 +3,7 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  transpilePackages: ['@chms/shared'],
   staticPageGenerationTimeout: 180,
   outputFileTracingRoot: path.join(__dirname),
   reactStrictMode: true,

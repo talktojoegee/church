@@ -4,6 +4,10 @@
 
 :root {
   --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Georgia', 'Times New Roman', serif;
+  --brand-red: #c00000;
+  --brand-orange: #f99d1c;
+  --brand-black: #0a0a0a;
 }
 
 html,

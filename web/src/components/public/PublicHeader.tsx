@@ -29,7 +29,7 @@ export function PublicHeader({ name, logoUrl }: PublicHeaderProps) {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-brand-900/95 text-white backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-3">
-          <ChurchLogo name={name} logoUrl={logoUrl} variant="sidebar" />
+          <ChurchLogo name={name} logoUrl={logoUrl} variant="sidebar" showName={false} />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

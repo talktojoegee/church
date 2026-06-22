@@ -1,0 +1,73 @@
+name: Hostinger deploy zips
+
+# Build Linux deploy zips in the cloud — no local Docker required.
+# Download from: Actions → latest run → Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - 'scripts/**'
+      - '.github/workflows/hostinger-zips.yml'
+
+jobs:
+  api-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build API stage
+        run: bash scripts/build-api-stage.sh /tmp/chms-api-stage
+
+      - name: Create API zip
+        run: |
+          mkdir -p dist
+          cd /tmp/chms-api-stage
+          zip -rq "$GITHUB_WORKSPACE/dist/chms-api-deploy.zip" . \
+            -x "*.map" -x "*/.turbo/*" -x "*/test/*" -x "*/src/*"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chms-api-deploy
+          path: dist/chms-api-deploy.zip
+          retention-days: 14
+
+  web-zip:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: https://api.paggglobal.org/api
+      NEXT_PUBLIC_APP_NAME: Power And Glory Generation
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build Web stage
+        run: bash scripts/build-web-stage.sh /tmp/chms-web-stage
+
+      - name: Create Web zip
+        run: |
+          mkdir -p dist
+          cd /tmp/chms-web-stage
+          zip -rq "$GITHUB_WORKSPACE/dist/chms-web-deploy.zip" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chms-web-deploy
+          path: dist/chms-web-deploy.zip
+          retention-days: 14

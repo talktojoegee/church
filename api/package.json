@@ -2,13 +2,12 @@
   "name": "chms-api",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
     "dev": "nest start --watch",
-    "build": "node scripts/build-shared.js && node scripts/sync-shared.js && prisma generate && nest build",
+    "build": "pnpm --filter @chms/shared build && node scripts/sync-shared.js && prisma generate && nest build",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
@@ -20,7 +19,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@chms/shared": "file:./src/shared",
+    "@chms/shared": "workspace:*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",

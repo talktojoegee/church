@@ -65,7 +65,7 @@ export function WelcomeIntro({ churchName, pastor }: WelcomeIntroProps) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-800 to-brand-600">
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-900 via-brand-700 to-flame-orange">
                       <span className="text-5xl font-bold text-white/90">{initials}</span>
                     </div>
                   )}

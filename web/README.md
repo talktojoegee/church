@@ -14,19 +14,21 @@ Web: http://localhost:3000
 
 ## Hostinger Git deploy (hPanel)
 
-Create a **Node.js app** for `paggglobal.org` and connect this GitHub repo.
+Create a **Node.js app** for `paggglobal.org` and connect the **church** monorepo.
 
 | Setting | Value |
 |---------|--------|
 | Framework | Next.js |
 | Branch | `main` |
 | Node version | **22.x** |
-| Root directory | `web` |
-| Package manager | **npm** |
-| Install command | `bash scripts/hostinger-install.sh` (or default `npm install`) |
-| Build command | `npm run build:hostinger` |
+| Root directory | **`web`** |
+| Package manager | **pnpm** |
+| Install command | `bash scripts/hostinger-install.sh` |
+| Build command | `pnpm run build:hostinger` |
 | Output directory | `.next/standalone` |
 | Entry file | `server.js` |
+
+Install runs `pnpm install` from the **monorepo root** (parent of `web/`).
 
 ### Environment variables (build-time)
 

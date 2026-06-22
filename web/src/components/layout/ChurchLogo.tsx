@@ -19,43 +19,41 @@ export function ChurchLogo({
   showName = true,
   className,
 }: ChurchLogoProps) {
-  const displayName = name || 'ChMS';
-  const initial = displayName.charAt(0).toUpperCase();
+  const displayName = name || 'Power & Glory Generation';
+  const src = logoUrl ? assetUrl(logoUrl) : '/logo.png';
+  const usesDefaultLogo = !logoUrl;
 
   const logoDims =
     variant === 'login'
-      ? 'h-14 max-w-[200px]'
+      ? 'h-16 max-w-[240px]'
       : variant === 'preview'
         ? 'h-10 max-w-[160px]'
-        : 'h-8 max-w-[120px]';
+        : 'h-9 max-w-[140px]';
 
-  const fallbackBox =
-    variant === 'login' ? 'h-14 w-14 text-xl' : variant === 'preview' ? 'h-10 w-10 text-sm' : 'h-8 w-8 text-sm';
+  const image = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={`${displayName} logo`}
+      className={cn(logoDims, 'w-auto shrink-0 object-contain object-left')}
+    />
+  );
 
   return (
     <div className={cn('flex min-w-0 items-center gap-2.5', className)}>
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={assetUrl(logoUrl)}
-          alt={`${displayName} logo`}
-          className={cn(logoDims, 'w-auto shrink-0 object-contain object-left')}
-        />
+      {variant === 'login' && usesDefaultLogo ? (
+        <div className="rounded-xl bg-brand-900 px-4 py-3">{image}</div>
       ) : (
-        <div
-          className={cn(
-            'flex shrink-0 items-center justify-center rounded-lg bg-brand-500 font-bold text-white shadow-lg shadow-brand-500/30',
-            fallbackBox,
-          )}
-        >
-          {initial}
-        </div>
+        image
       )}
-      {showName && (
+      {showName && usesDefaultLogo && variant === 'login' && (
+        <span className="truncate text-xl font-semibold text-brand-900">{displayName}</span>
+      )}
+      {showName && !usesDefaultLogo && variant !== 'sidebar' && (
         <span
           className={cn(
             'truncate font-semibold',
-            variant === 'login' ? 'text-xl text-slate-900' : 'text-white',
+            variant === 'login' ? 'text-xl text-brand-900' : 'text-white',
           )}
         >
           {displayName}

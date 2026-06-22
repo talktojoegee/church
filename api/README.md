@@ -17,19 +17,21 @@ API: http://localhost:4000/api
 
 ## Hostinger Git deploy (hPanel)
 
-Create a **Node.js app** for `api.paggglobal.org` and connect this GitHub repo.
+Create a **Node.js app** for `api.paggglobal.org` and connect the **church** monorepo.
 
 | Setting | Value |
 |---------|--------|
 | Framework | NestJS |
 | Branch | `main` |
 | Node version | **22.x** |
-| Root directory | `./` |
+| Root directory | **`api`** |
 | Package manager | **pnpm** |
 | Install command | `bash scripts/hostinger-install.sh` |
 | Build command | `pnpm run build` |
 | Output directory | `dist` |
 | Entry file | `main.js` |
+
+Install runs `pnpm install` from the **monorepo root** (parent of `api/`).
 
 ### Environment variables (hPanel → Environment variables)
 
